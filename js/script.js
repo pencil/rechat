@@ -77,7 +77,11 @@ var ReChat = {
     });
   },
 
-  showStatusMessage: function(message) {
+  showStatusMessage: function(message, statusImage) {
+    if (!statusImage) {
+      statusImage = 'spinner.gif';
+    }
+    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('images/' + statusImage) + ')');
     ReChat._chatMessageContainer.empty();
     ReChat._statusMessageContainer.text(message);
     ReChat._statusMessageContainer.show();
@@ -112,7 +116,9 @@ var ReChat = {
       ReChat._cachedMessages = [];
       ReChat.autoPopulateCache(true);
     } else if (currentAbsoluteVideoTime >= ReChat._messageStreamEndAt) {
-      console.info('No more messages found');
+      if (ReChat._chatMessageContainer.is(':empty')) {
+        ReChat.showStatusMessage('Sorry, no chat messages for this VOD available', 'sad.png');
+      }
     } else if (!ReChat._cachedMessages.length) {
       console.info('Cache is empty, waiting for population...');
     } else {
@@ -205,7 +211,7 @@ var ReChat = {
         divEmberChat = $('<div>').addClass('ember-chat'),
         divChatRoom = $('<div>').addClass('chat-room'),
         divChatMessages = $('<div>').addClass('scroll chat-messages').css({ 'padding': '0 20px', 'bottom': 0, 'overflow': 'auto', 'overflow-x': 'hidden' }),
-        divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-image': 'url(' + chrome.extension.getURL('images/spinner.gif') + ')', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'padding': '50px 20px' });
+        divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'padding': '50px 20px' });
         liChat = $('<li>'),
         liArchives = $('<li>').addClass('selected'),
         aChat = $('<a>Chat</a>'),

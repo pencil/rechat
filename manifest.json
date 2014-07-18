@@ -21,7 +21,8 @@
 
   "web_accessible_resources": [
     "js/injected.js",
-    "images/spinner.gif"
+    "images/spinner.gif",
+    "images/sad.png"
   ]
 
 }

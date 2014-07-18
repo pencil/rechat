@@ -1,0 +1,27 @@
+{
+  "manifest_version": 2,
+
+  "name": "ReChat",
+  "description": "Adds chat messages from the past to Twitch™ VODs.",
+  "version": "0.1",
+
+  "permissions": [
+    "http://www.twitch.tv/",
+    "https://api.twitch.tv/kraken/",
+    "http://es.rechat.org/"
+  ],
+  "content_security_policy": "script-src 'self' https://api.twitch.tv/; object-src 'self'",
+
+  "content_scripts": [
+    {
+      "matches": ["http://www.twitch.tv/*"],
+      "js": ["vendor/js/jquery.min.js", "vendor/js/please.min.js", "js/script.js"]
+    }
+  ],
+
+  "web_accessible_resources": [
+    "js/injected.js",
+    "images/spinner.gif"
+  ]
+
+}

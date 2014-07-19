@@ -3,7 +3,7 @@
 
   "name": "ReChat for Twitch™",
   "short_name": "ReChat",
-  "description": "Adds chat messages from the past to your favorite Twitch™ VODs.",
+  "description": "Adds chat messages from the past to your favorite Twitch VODs.",
   "author": "Nils Caspar",
   "homepage_url": "http://www.rechat.org/",
   "version": "0.1",

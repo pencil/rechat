@@ -251,7 +251,6 @@ var ReChat = {
   loadEmoticons: function() {
     ReChat._emoticons = [];
     $.get('https://api.twitch.tv/kraken/chat/emoticons', function(result) {
-      console.info(result);
       $.each(result.emoticons, function(i, emoticon) {
         var image = emoticon.images[0];
         if (image.emoticon_set === null) {
@@ -261,7 +260,6 @@ var ReChat = {
           });
         }
       });
-      console.info(ReChat._emoticons);
     });
   },
 

@@ -1,36 +1,11 @@
 var ReChat = {
   // Settings:
-  elasticsearchBaseUrl: 'http://es.rechat.org/twitchchat/_search/',
-  cachePagination: 1000,
+  searchBaseUrl: 'http://search.rechat.org/channels/',
   cacheExhaustionLimit: 100,
   chatDisplayLimit: 1000,
 
   loadMessages: function(recievedAfter, callback) {
-    $.post(ReChat.elasticsearchBaseUrl, JSON.stringify(
-      {
-        "size": ReChat.cachePagination,
-        "sort": [
-          { "recieved_at": "asc" }
-        ],
-        "query": {
-          "filtered": {
-            "query": {
-              "term": {
-                "to": ReChat.channelName
-              }
-            },
-            "filter": {
-              "range": {
-                "recieved_at": {
-                  "gt": recievedAfter,
-                  "lte": ReChat.endsAt.toISOString()
-                }
-              }
-            }
-          }
-        }
-      }),
-      callback).fail(function() {
+    $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
         // request failed, let's try again in 5 seconds
         setTimeout(function() {
           ReChat.loadMessages(recievedAfter, callback);

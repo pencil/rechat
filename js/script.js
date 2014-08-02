@@ -56,14 +56,9 @@ var ReChat = {
     if (!statusImage) {
       statusImage = 'spinner.gif';
     }
-    // Clear the chat display
+    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('images/' + statusImage) + ')');
     ReChat._chatMessageContainer.empty();
-    // Construct our display string
-    var div_string = '<img style="width:40px;heigh:40px;" src="'+ chrome.extension.getURL('images/' + statusImage) +'" />';
-    div_string += '<br/>';
-    div_string += message;
-    // Load and display the data
-    ReChat._statusMessageContainer.html(div_string);
+    ReChat._statusMessageContainer.text(message);
     ReChat._statusMessageContainer.show();
   },
 
@@ -191,7 +186,7 @@ var ReChat = {
         divEmberChat = $('<div>').addClass('ember-chat'),
         divChatRoom = $('<div>').addClass('chat-room'),
         divChatMessages = $('<div>').addClass('scroll chat-messages').css({ 'padding': '0 20px', 'bottom': 0, 'overflow': 'auto', 'overflow-x': 'hidden' }),
-        divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'padding': '50px 20px' });
+        divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
         liChat = $('<li>'),
         liArchives = $('<li>').addClass('selected'),
         aChat = $('<a>Chat</a>'),

@@ -6,7 +6,7 @@
   "description": "Adds chat messages from the past to your favorite Twitch VODs.",
   "author": "Nils Caspar",
   "homepage_url": "http://www.rechat.org/",
-  "version": "0.2",
+  "version": "0.3",
 
   "icons": {
     "16": "images/icon16.png",

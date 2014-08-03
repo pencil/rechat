@@ -5,12 +5,21 @@ var ReChat = {
   chatDisplayLimit: 1000,
 
   loadMessages: function(recievedAfter, callback) {
+    // Check if valid ISOString, else return
+    if(typeof(recievedAfter.toISOString) != "function") {
+      console.info('Invalid ISO String re-trying in 5 seconds...');
+      setTimeout(function() {
+        ReChat.loadMessages(ReChat.currentAbsoluteVideoTime(), callback);
+      }, 5000);
+      return;
+    }
+    // Ping server for request
     $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
-        // request failed, let's try again in 5 seconds
-        setTimeout(function() {
-          ReChat.loadMessages(recievedAfter, callback);
-        }, 5000);
-      });
+      // request failed, let's try again in 5 seconds
+      setTimeout(function() {
+        ReChat.loadMessages(recievedAfter, callback);
+      }, 5000);
+    });
   },
 
   currentVideoTime: function() {

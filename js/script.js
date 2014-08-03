@@ -239,7 +239,7 @@ var ReChat = {
       $.each(result.emoticons, function(i, emoticon) {
         var image = emoticon.images[0];
         ReChat._emoticons.push({
-          regex: new RegExp(emoticon.regex, 'g'),
+          regex: new RegExp('\\b'+emoticon.regex+'\\b', 'g'),
           code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width, 'margin-top': '-6px' }).prop('outerHTML')
         });
       });

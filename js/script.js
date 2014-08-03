@@ -208,6 +208,7 @@ var ReChat = {
     liArchives.append(aArchives);
     ul.append(liChat).append(liArchives);
     top.append(ul);
+    top.css('z-index', 100);
     divChatRoom.append(divChatMessages);
     divChatRoom.append(divStatusMessage);
     divEmberChat.append(divChatRoom);

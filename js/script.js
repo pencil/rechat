@@ -229,12 +229,10 @@ var ReChat = {
     $.get('https://api.twitch.tv/kraken/chat/emoticons', function(result) {
       $.each(result.emoticons, function(i, emoticon) {
         var image = emoticon.images[0];
-        if (image.emoticon_set === null) {
-          ReChat._emoticons.push({
-            regex: new RegExp(emoticon.regex, 'g'),
-            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML')
-          });
-        }
+        ReChat._emoticons.push({
+          regex: new RegExp(emoticon.regex, 'g'),
+          code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width, 'margin-top': '-6px' }).prop('outerHTML')
+        });
       });
     });
   },

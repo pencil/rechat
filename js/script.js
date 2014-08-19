@@ -39,7 +39,7 @@ var ReChat = {
       } else {
         var hits = result.hits.hits,
             newestMessage = hits[hits.length - 1];
-        ReChat._newestMessageDate = Date.parse(newestMessage._source.recieved_at);
+        ReChat._newestMessageDate = new Date(newestMessage._source.recieved_at);
         if (result.hits.total == hits.length) {
           ReChat._messageStreamEndAt = ReChat._newestMessageDate;
         }

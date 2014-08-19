@@ -5,12 +5,21 @@ var ReChat = {
   chatDisplayLimit: 1000,
 
   loadMessages: function(recievedAfter, callback) {
+    // Check if valid ISOString, else return
+    if(typeof(recievedAfter.toISOString) != "function") {
+      console.info('Invalid ISO String re-trying in 5 seconds...');
+      setTimeout(function() {
+        ReChat.loadMessages(ReChat.currentAbsoluteVideoTime(), callback);
+      }, 5000);
+      return;
+    }
+    // Ping server for request
     $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
-        // request failed, let's try again in 5 seconds
-        setTimeout(function() {
-          ReChat.loadMessages(recievedAfter, callback);
-        }, 5000);
-      });
+      // request failed, let's try again in 5 seconds
+      setTimeout(function() {
+        ReChat.loadMessages(recievedAfter, callback);
+      }, 5000);
+    });
   },
 
   currentVideoTime: function() {
@@ -185,7 +194,7 @@ var ReChat = {
         divChat = $('<div>').addClass('stretch').attr('id', 'chat').css({ 'top': 0, 'bottom': 0 }),
         divEmberChat = $('<div>').addClass('ember-chat'),
         divChatRoom = $('<div>').addClass('chat-room'),
-        divChatMessages = $('<div>').addClass('scroll chat-messages').css({ 'padding': '0 20px', 'bottom': 0, 'overflow': 'auto', 'overflow-x': 'hidden' }),
+        divChatMessages = $('<div>').addClass('scroll chat-messages').css({ 'padding': '0 5px 0 20px','bottom': 0, 'overflow-y': 'scroll', 'overflow-x': 'hidden' }),
         divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
         liChat = $('<li>'),
         liArchives = $('<li>').addClass('selected'),
@@ -208,6 +217,7 @@ var ReChat = {
     liArchives.append(aArchives);
     ul.append(liChat).append(liArchives);
     top.append(ul);
+    top.css('z-index', 100);
     divChatRoom.append(divChatMessages);
     divChatRoom.append(divStatusMessage);
     divEmberChat.append(divChatRoom);
@@ -228,12 +238,10 @@ var ReChat = {
     $.get('https://api.twitch.tv/kraken/chat/emoticons', function(result) {
       $.each(result.emoticons, function(i, emoticon) {
         var image = emoticon.images[0];
-        if (image.emoticon_set === null) {
-          ReChat._emoticons.push({
-            regex: new RegExp(emoticon.regex, 'g'),
-            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML')
-          });
-        }
+        ReChat._emoticons.push({
+          regex: new RegExp('\\b'+emoticon.regex+'\\b', 'g'),
+          code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width, 'margin-top': '-6px' }).prop('outerHTML')
+        });
       });
     });
   },

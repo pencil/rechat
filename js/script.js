@@ -31,8 +31,8 @@ var ReChat = {
     }
     ReChat._cachePopulationId = populationId;
     var loadingFunction = function() {
+      console.info('Loading messages from the server');
       ReChat.loadMessages(newestMessageDate, function(result) {
-        console.info('Loading messages from the server');
         if (populationId != ReChat._cachePopulationId) {
           console.info('Population ID changed, lock expired, aborting...');
           return;

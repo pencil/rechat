@@ -3,6 +3,7 @@ var ReChat = {
   searchBaseUrl: 'http://search.rechat.org/channels/',
   cacheExhaustionLimit: 100,
   chatDisplayLimit: 1000,
+  loadingDelay: 5000,
 
   loadMessages: function(recievedAfter, callback) {
     $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
@@ -29,27 +30,39 @@ var ReChat = {
       return;
     }
     ReChat._cachePopulationId = populationId;
-    ReChat.loadMessages(newestMessageDate, function(result) {
-      if (populationId != ReChat._cachePopulationId) {
-        console.info('Population ID changed, lock expired, aborting...');
-        return;
-      }
-      if (!result.hits.total) {
-        ReChat._messageStreamEndAt = newestMessageDate;
-      } else {
-        var hits = result.hits.hits,
-            newestMessage = hits[hits.length - 1];
-        ReChat._newestMessageDate = new Date(newestMessage._source.recieved_at);
-        if (result.hits.total == hits.length) {
-          ReChat._messageStreamEndAt = ReChat._newestMessageDate;
+    var loadingFunction = function() {
+      ReChat.loadMessages(newestMessageDate, function(result) {
+        console.info('Loading messages from the server');
+        if (populationId != ReChat._cachePopulationId) {
+          console.info('Population ID changed, lock expired, aborting...');
+          return;
         }
-        if (dropExistingCache) {
-          ReChat._cachedMessages = hits;
+        if (!result.hits.total) {
+          ReChat._messageStreamEndAt = newestMessageDate;
         } else {
-          Array.prototype.push.apply(ReChat._cachedMessages, hits);
+          var hits = result.hits.hits,
+          newestMessage = hits[hits.length - 1];
+          ReChat._newestMessageDate = new Date(newestMessage._source.recieved_at);
+          if (result.hits.total == hits.length) {
+            ReChat._messageStreamEndAt = ReChat._newestMessageDate;
+          }
+          if (dropExistingCache) {
+            ReChat._cachedMessages = hits;
+          } else {
+            Array.prototype.push.apply(ReChat._cachedMessages, hits);
+          }
         }
+      });
+    };
+
+    if (dropExistingCache) {
+      if (ReChat._loadingTimeout) {
+        clearTimeout(ReChat._loadingTimeout);
       }
-    });
+      ReChat._loadingTimeout = setTimeout(loadingFunction, ReChat.loadingDelay);
+    } else {
+      loadingFunction();
+    }
   },
 
   showStatusMessage: function(message, statusImage) {

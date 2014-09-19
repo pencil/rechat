@@ -39,6 +39,8 @@
 	</dict>
 	<key>Description</key>
 	<string>Adds chat messages from the past to your favorite Twitch VODs</string>
+  <key>DeveloperIdentifier</key>
+  <string>2XY76Y6E6J</string>
 	<key>ExtensionInfoDictionaryVersion</key>
 	<string>1.0</string>
 	<key>Permissions</key>

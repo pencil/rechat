@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <script src="js/jquery.min.js"></script>
+    <script type="text/javascript">
+      function onRequest(event) {
+        if(event.message.type == 'GETRequest') {
+          jQuery.get(event.message.url, event.message.params, function(result) {
+            event.target.page.dispatchMessage(event.name, result);
+          }).fail(function() {
+            event.target.page.dispatchMessage(event.name, 'error');
+          });
+        }
+      }
+      safari.application.addEventListener('message', onRequest, false);
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -9,10 +9,10 @@
   "version": "0.5",
 
   "icons": {
-    "16": "res/icon16.png",
-    "48": "res/icon48.png",
-    "64": "res/icon64.png",
-    "128": "res/icon128.png"
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "64": "icon64.png",
+    "128": "icon128.png"
   },
 
   "permissions": [

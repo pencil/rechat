@@ -13,3 +13,5 @@ do
   ln $file ./Firefox/data/
   ln $file ./Safari.safariextension/res/
 done
+
+ln ./Safari.safariextension/res/icon128.png ./Safari.safariextension/Icon.png

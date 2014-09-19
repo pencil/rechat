@@ -64,7 +64,7 @@ var ReChat = {
         break;
       case ReChat.Browser.Chrome:
       case ReChat.Browser.Firefox:
-        var jqxhr = $.get(path, params, callback);
+        var jqxhr = $.get(path, params, success);
         if(failure) {
           jqxhr.fail(failure);
         }

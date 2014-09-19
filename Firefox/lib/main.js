@@ -11,7 +11,7 @@ pageMod.PageMod({
   contentScriptOptions: localFiles,
   contentScriptFile: [
     data.url('jquery.min.js'),
-    data.url('please.min.js'),
+    data.url('please.js'),
     data.url('rechat.js')
   ]
 });

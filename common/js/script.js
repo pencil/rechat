@@ -69,7 +69,7 @@ var ReChat = {
     if (!statusImage) {
       statusImage = 'spinner.gif';
     }
-    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('images/' + statusImage) + ')');
+    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('res/' + statusImage) + ')');
     ReChat._chatMessageContainer.empty();
     ReChat._statusMessageContainer.text(message);
     ReChat._statusMessageContainer.show();

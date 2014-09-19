@@ -11,6 +11,7 @@
   "icons": {
     "16": "res/icon16.png",
     "48": "res/icon48.png",
+    "64": "res/icon64.png",
     "128": "res/icon128.png"
   },
 

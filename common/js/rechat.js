@@ -5,8 +5,16 @@ var ReChat = {
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
 
+  getExtensionResourcePath: function (path) {
+    if(typeof(chrome) !== 'undefined') {
+      return chrome.extension.getURL(path);
+    } else if(typeof(self.on) === 'function') {
+      return self.options[path];
+    }
+  },
+
   loadMessages: function(recievedAfter, callback) {
-    $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
+    $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function(a, b, c) {
         // request failed, let's try again in 5 seconds
         setTimeout(function() {
           ReChat.loadMessages(recievedAfter, callback);
@@ -69,7 +77,7 @@ var ReChat = {
     if (!statusImage) {
       statusImage = 'spinner.gif';
     }
-    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('res/' + statusImage) + ')');
+    ReChat._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
     ReChat._chatMessageContainer.empty();
     ReChat._statusMessageContainer.text(message);
     ReChat._statusMessageContainer.show();
@@ -244,7 +252,7 @@ var ReChat = {
         if (image.emoticon_set === null) {
           ReChat._emoticons.push({
             regex: new RegExp(emoticon.regex, 'g'),
-            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML')
+            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
           });
         }
       });
@@ -283,7 +291,7 @@ $(document).ready(function() {
 
       // Inject script to extract video time
       var script = document.createElement('script');
-      script.src = chrome.extension.getURL('js/injected.js');
+      script.src = ReChat.getExtensionResourcePath('js/injected.js');
       document.documentElement.appendChild(script);
     }
   }

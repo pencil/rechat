@@ -5,13 +5,84 @@ var ReChat = {
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
 
+  Browser: {
+    Safari: 0,
+    Chrome: 1,
+    Firefox: 2
+  },
+
+  currentBrowser: function() {
+    if(typeof(safari) !== 'undefined') {
+      return ReChat.Browser.Safari;
+    } else if(typeof(chrome) !== 'undefined') {
+      return ReChat.Browser.Chrome;
+    } else if(typeof(self.on) === 'function') {
+      return ReChat.Browser.Firefox;
+    }
+  },
+
+  getExtensionResourcePath: function (path) {
+    switch(ReChat.currentBrowser()) {
+      case ReChat.Browser.Safari:
+        return safari.extension.baseURI + path;
+      case ReChat.Browser.Chrome:
+        return chrome.extension.getURL(path);
+      case ReChat.Browser.Firefox:
+        return self.options[path];
+    }
+    return null;
+  },
+
+  randomUUID: function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+          v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  },
+
+  get: function(path, params, success, failure) {
+    switch(ReChat.currentBrowser()) {
+      case ReChat.Browser.Safari:
+        var uuid = ReChat.randomUUID(),
+            handler = function(event) {
+              if(event.name == uuid) {
+                safari.self.removeEventListener('message', handler);
+                if(event.message == 'error') {
+                  failure && failure();
+                } else {
+                  success(event.message);
+                }
+              }
+            };
+        safari.self.addEventListener('message', handler);
+        safari.self.tab.dispatchMessage(uuid, {
+          type: 'GETRequest',
+          url: path,
+          params: params
+        });
+        break;
+      case ReChat.Browser.Chrome:
+      case ReChat.Browser.Firefox:
+        var jqxhr = $.get(path, params, success);
+        if(failure) {
+          jqxhr.fail(failure);
+        }
+        break;
+    }
+    return null;
+  },
+
   loadMessages: function(recievedAfter, callback) {
-    $.get(ReChat.searchBaseUrl + ReChat.channelName, { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() }, callback).fail(function() {
-        // request failed, let's try again in 5 seconds
-        setTimeout(function() {
-          ReChat.loadMessages(recievedAfter, callback);
-        }, 5000);
-      });
+    ReChat.get(ReChat.searchBaseUrl + ReChat.channelName,
+               { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() },
+               callback,
+               function() {
+                 // request failed, let's try again in 5 seconds
+                 setTimeout(function() {
+                   ReChat.loadMessages(recievedAfter, callback);
+                 }, 5000);
+               });
   },
 
   currentVideoTime: function() {
@@ -69,7 +140,7 @@ var ReChat = {
     if (!statusImage) {
       statusImage = 'spinner.gif';
     }
-    ReChat._statusMessageContainer.css('background-image', 'url(' + chrome.extension.getURL('images/' + statusImage) + ')');
+    ReChat._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
     ReChat._chatMessageContainer.empty();
     ReChat._statusMessageContainer.text(message);
     ReChat._statusMessageContainer.show();
@@ -238,13 +309,13 @@ var ReChat = {
 
   loadEmoticons: function() {
     ReChat._emoticons = [];
-    $.get('https://api.twitch.tv/kraken/chat/emoticons', function(result) {
+    ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
       $.each(result.emoticons, function(i, emoticon) {
         var image = emoticon.images[0];
         if (image.emoticon_set === null) {
           ReChat._emoticons.push({
             regex: new RegExp(emoticon.regex, 'g'),
-            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML')
+            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
           });
         }
       });
@@ -270,7 +341,7 @@ $(document).ready(function() {
         match = videoIdRegex.exec(videoUrl);
     if (match != null) {
       var videoId = match[1];
-      $.get('https://api.twitch.tv/kraken/videos/' + videoId, function(result) {
+      ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
         var recordedAt = new Date(Date.parse(result.recorded_at)),
             recordingDuration = result.length,
             endsAt = new Date(+recordedAt + recordingDuration * 1000),
@@ -283,7 +354,7 @@ $(document).ready(function() {
 
       // Inject script to extract video time
       var script = document.createElement('script');
-      script.src = chrome.extension.getURL('js/injected.js');
+      script.src = ReChat.getExtensionResourcePath('js/injected.js');
       document.documentElement.appendChild(script);
     }
   }

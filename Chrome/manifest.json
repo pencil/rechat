@@ -9,9 +9,10 @@
   "version": "0.5",
 
   "icons": {
-    "16": "images/icon16.png",
-    "48": "images/icon48.png",
-    "128": "images/icon128.png"
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "64": "icon64.png",
+    "128": "icon128.png"
   },
 
   "permissions": [
@@ -24,14 +25,14 @@
   "content_scripts": [
     {
       "matches": ["http://www.twitch.tv/*"],
-      "js": ["vendor/js/jquery.min.js", "vendor/js/please.min.js", "js/script.js"]
+      "js": ["js/jquery.min.js", "js/please.js", "js/rechat.js"]
     }
   ],
 
   "web_accessible_resources": [
     "js/injected.js",
-    "images/spinner.gif",
-    "images/sad.png"
+    "res/spinner.gif",
+    "res/sad.png"
   ]
 
 }

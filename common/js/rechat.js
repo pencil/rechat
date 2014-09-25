@@ -19,7 +19,7 @@ var ReChat = {
     } else if(typeof(self.on) === 'function') {
       return ReChat.Browser.Firefox;
     } else {
-      throw "ReChat is not compatible with this browser";
+      throw 'ReChat is not compatible with this browser';
     }
   },
 
@@ -77,7 +77,7 @@ var ReChat = {
 
   loadMessages: function(recievedAfter, callback) {
     ReChat.get(ReChat.searchBaseUrl + ReChat.channelName,
-               { "after": recievedAfter.toISOString(), "until": ReChat.endsAt.toISOString() },
+               { 'after': recievedAfter.toISOString(), 'until': ReChat.endsAt.toISOString() },
                callback,
                function() {
                  // request failed, let's try again in 5 seconds
@@ -265,7 +265,7 @@ var ReChat = {
         top = rightColumnContent.find('div.top'),
         archives = rightColumnContent.find('#archives');
     if (!rightColumnContent.length || !top.length || !archives.length) {
-      throw "ReChat is not compatible with this Twitch layout";
+      throw 'ReChat is not compatible with this Twitch layout';
     }
     var ul = $('<ul>').addClass('tabs').attr('id', 'right_nav'),
         divChat = $('<div>').addClass('stretch').attr('id', 'chat').css({ 'top': 0, 'bottom': 0 }),

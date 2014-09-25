@@ -18,6 +18,8 @@ var ReChat = {
       return ReChat.Browser.Chrome;
     } else if(typeof(self.on) === 'function') {
       return ReChat.Browser.Firefox;
+    } else {
+      throw "ReChat is not compatible with this browser";
     }
   },
 

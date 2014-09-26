@@ -184,7 +184,7 @@ var ReChat = {
       console.info('Cache is empty, waiting for population...');
     } else {
       if (ReChat._cachedMessages.length >= ReChat.cacheExhaustionLimit) {
-        ReChat._cacheExchaustionHandled = false;
+        ReChat._cacheExhaustionHandled = false;
       }
       ReChat.hideStatusMessage();
       while (ReChat._cachedMessages.length) {
@@ -217,8 +217,8 @@ var ReChat = {
         ReChat._chatMessageContainer.find('.chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
       }
 
-      if (!ReChat._cacheExchaustionHandled && ReChat._cachedMessages.length < ReChat.cacheExhaustionLimit) {
-        ReChat._cacheExchaustionHandled = true;
+      if (!ReChat._cacheExhaustionHandled && ReChat._cachedMessages.length < ReChat.cacheExhaustionLimit) {
+        ReChat._cacheExhaustionHandled = true;
         ReChat.autoPopulateCache();
       }
     }

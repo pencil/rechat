@@ -1,6 +1,6 @@
 var ReChat = {
   // Settings:
-  searchBaseUrl: 'http://search.rechat.org/channels/',
+  searchBaseUrl: 'http://search.rechat.org/videos/',
   cacheExhaustionLimit: 100,
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
@@ -76,8 +76,8 @@ var ReChat = {
   },
 
   loadMessages: function(recievedAfter, callback) {
-    ReChat.get(ReChat.searchBaseUrl + ReChat.channelName,
-               { 'after': recievedAfter.toISOString(), 'until': ReChat.endsAt.toISOString() },
+    ReChat.get(ReChat.searchBaseUrl + ReChat.videoId,
+               { 'after': recievedAfter.toISOString() },
                callback,
                function() {
                  // request failed, let's try again in 5 seconds
@@ -170,7 +170,7 @@ var ReChat = {
       ReChat.showStatusMessage('Loading messages...');
       console.info('First invocation, populating cache for the first time');
       ReChat.autoPopulateCache(true);
-    } else if (previousVideoTime > currentVideoTime || currentVideoTime - previousVideoTime > 30) {
+    } else if (previousVideoTime > currentVideoTime || currentVideoTime - previousVideoTime > 60) {
       console.info('Time jumped, discarding cache and starting over');
       ReChat.showStatusMessage('Loading messages...');
       ReChat._newestMessageDate = null;
@@ -344,13 +344,9 @@ $(document).ready(function() {
     if (match != null) {
       var videoId = match[1];
       ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
-        var recordedAt = new Date(Date.parse(result.recorded_at)),
-            recordingDuration = result.length,
-            endsAt = new Date(+recordedAt + recordingDuration * 1000),
-            channelName = result.channel.name;
+        var recordedAt = new Date(Date.parse(result.recorded_at));
+        ReChat.videoId = videoId;
         ReChat.recordedAt = recordedAt;
-        ReChat.endsAt = endsAt;
-        ReChat.channelName = channelName;
         ReChat.start();
       });
 

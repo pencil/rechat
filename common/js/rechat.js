@@ -223,7 +223,9 @@ var ReChat = {
       }
     }
     ReChat._previousVideoTime = currentVideoTime;
-    setTimeout(ReChat.replay, 200);
+    if (!ReChat._stopped) {
+      setTimeout(ReChat.replay, 200);
+    }
   },
 
   colorForNickname: function(nickname) {
@@ -261,9 +263,9 @@ var ReChat = {
   },
 
   prepareInterface: function() {
-    var rightColumnContent = $('div#right_col > div.content'),
+    var rightColumnContent = $('div#right_col > div.rightcol-content'),
         top = rightColumnContent.find('div.top'),
-        archives = rightColumnContent.find('#archives');
+        archives = rightColumnContent.find('div.archives-contain');
     if (!rightColumnContent.length || !top.length || !archives.length) {
       throw 'ReChat is not compatible with this Twitch layout';
     }
@@ -293,6 +295,8 @@ var ReChat = {
     liChat.append(aChat);
     liArchives.append(aArchives);
     ul.append(liChat).append(liArchives);
+    top.removeClass('hidden');
+    top.empty();
     top.append(ul);
     divChatRoom.append(divChatMessages);
     divChatRoom.append(divStatusMessage);
@@ -325,35 +329,55 @@ var ReChat = {
   },
 
   start: function() {
+    ReChat._stopped = false;
     ReChat._cachedMessages = [];
     ReChat.prepareInterface();
     ReChat.prepareRandomColors();
     ReChat.loadEmoticons();
     ReChat.replay();
+  },
+
+  stop: function() {
+    ReChat._stopped = true;
   }
 }
+
 $(document).ready(function() {
   if (window.top !== window) {
     return;
   }
-  var ogVideoTag = $('meta[property="og:video"]');
-  if (ogVideoTag.length) {
-    var videoUrl = ogVideoTag.attr('content'),
-        videoIdRegex = /videoId=([a-z0-9]+)/,
-        match = videoIdRegex.exec(videoUrl);
-    if (match != null) {
-      var videoId = match[1];
-      ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
-        var recordedAt = new Date(Date.parse(result.recorded_at));
-        ReChat.videoId = videoId;
-        ReChat.recordedAt = recordedAt;
-        ReChat.start();
-      });
+  var lastUrl = false;
+  // TODO: find a better solution for this...
+  setInterval(function() {
+    var currentUrl = document.location.href;
+    if (lastUrl === false) {
+      var ogVideoTag = $('meta[property="og:video"]');
+      if (ogVideoTag.length) {
+        var videoUrl = ogVideoTag.attr('content'),
+            videoIdRegex = /videoId=([a-z0-9]+)/,
+            match = videoIdRegex.exec(videoUrl);
+        if (match != null) {
+          var videoId = match[1];
+          ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
+            if (currentUrl != document.location.href) {
+              return;
+            }
+            var recordedAt = new Date(Date.parse(result.recorded_at));
+            ReChat.videoId = videoId;
+            ReChat.recordedAt = recordedAt;
+            ReChat.start();
+          });
 
-      // Inject script to extract video time
-      var script = document.createElement('script');
-      script.src = ReChat.getExtensionResourcePath('js/injected.js');
-      document.documentElement.appendChild(script);
+          // Inject script to extract video time
+          var script = document.createElement('script');
+          script.src = ReChat.getExtensionResourcePath('js/injected.js');
+          document.documentElement.appendChild(script);
+        }
+      }
+      lastUrl = currentUrl;
+    } else if(lastUrl != currentUrl) {
+      ReChat.stop();
+      lastUrl = false;
     }
-  }
+  }, 1000);
 });

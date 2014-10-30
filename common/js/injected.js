@@ -1,9 +1,9 @@
 (function() {
-  var player = Twitch && Twitch.player ? Twitch.player.getPlayer() : false;
-  if (player) {
+  var player = $('div#player object');
+  if (player.length) {
     setInterval(function() {
-      if(player.getVideoTime) {
-        $('body').attr('rechat-video-time', player.getVideoTime());
+      if(player[0].getVideoTime) {
+        $('body').attr('rechat-video-time', player[0].getVideoTime());
       }
     }, 200);
   }

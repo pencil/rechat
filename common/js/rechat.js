@@ -264,13 +264,13 @@ ReChat.Playback.prototype._replay = function() {
       this._cacheExhaustionHandled = false;
     }
     this._hideStatusMessage();
+    var atBottom = this._scrolledToBottom();
     while (this._cachedMessages.length) {
       var message = this._cachedMessages[0],
           messageData = message._source,
           messageDate = new Date(Date.parse(messageData.recieved_at));
       if (messageDate <= currentAbsoluteVideoTime) {
         this._cachedMessages.shift();
-        var atBottom = this._scrolledToBottom();
         this._chatMessageContainer.append(this._formatChatMessage(messageData));
         if (atBottom) {
           this._scrollToBottom();
@@ -289,9 +289,11 @@ ReChat.Playback.prototype._replay = function() {
       }
     }
 
-    var numberOfChatMessagesDisplayed = this._chatMessageContainer.find('.rechat-chat-line').length;
-    if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
-      this._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
+    if (atBottom) {
+      var numberOfChatMessagesDisplayed = this._chatMessageContainer.find('.rechat-chat-line').length;
+      if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
+        this._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
+      }
     }
 
     if (!this._cacheExhaustionHandled && this._cachedMessages.length < ReChat.cacheExhaustionLimit) {

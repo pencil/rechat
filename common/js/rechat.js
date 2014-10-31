@@ -248,65 +248,61 @@ var ReChat = {
   },
 
   formatChatMessage: function(messageData) {
-    var line = $('<div>').addClass('chat-line'),
-        indicator = $('<div>').addClass('indicator'),
-        badges = $('<span>').addClass('badges'),
-        from = $('<span>').addClass('from').css('color', ReChat.colorForNickname(messageData.from)),
+    var line = $('<div>').css('padding', '4px'),
+        from = $('<span>').addClass('from').css({
+          color: ReChat.colorForNickname(messageData.from),
+          'font-weight': 'bold'
+        }),
         colon = $('<span>').addClass('colon'),
         message = $('<span>').addClass('message');
     from.text(messageData.from);
     colon.text(':');
     message.text(messageData.message);
     message.html(ReChat.replaceEmoticons(message.html()));
-    line.append(indicator).append(' ').append(badges).append(from).append(colon).append(' ').append(message);
+    line.append(from).append(colon).append(' ').append(message);
     return line;
   },
 
   prepareInterface: function() {
-    var rightColumnContent = $('div#right_col > div.rightcol-content'),
-        top = rightColumnContent.find('div.top'),
-        archives = rightColumnContent.find('div.archives-contain');
-    if (!rightColumnContent.length || !top.length || !archives.length) {
-      throw 'ReChat is not compatible with this Twitch layout';
-    }
-    var ul = $('<ul>').addClass('tabs').attr('id', 'right_nav'),
-        divChat = $('<div>').addClass('stretch').attr('id', 'chat').css({ 'top': 0, 'bottom': 0 }),
-        divEmberChat = $('<div>').addClass('ember-chat'),
-        divChatRoom = $('<div>').addClass('chat-room'),
-        divChatMessages = $('<div>').addClass('scroll chat-messages').css({ 'padding': '0 20px', 'bottom': 0, 'overflow': 'auto', 'overflow-x': 'hidden' }),
-        divStatusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
-        liChat = $('<li>'),
-        liArchives = $('<li>').addClass('selected'),
-        aChat = $('<a>Chat</a>'),
-        aArchives = $('<a>Archive</a>');
-    function switchTab(li, content) {
-      ul.find('li.selected').removeClass('selected');
-      divChat.hide();
-      archives.hide();
-      li.addClass('selected');
-      content.show();
-    }
-    aChat.on('click', function() {
-      switchTab(liChat, divChat);
+    var container = $('<div>');
+    container.css({
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: '339px',
+      'z-index': 4,
+      background: '#f2f2f2'
     });
-    aArchives.on('click', function() {
-      switchTab(liArchives, archives);
+    var statusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
+    ReChat._statusMessageContainer = statusMessage;
+    container.append(statusMessage);
+
+    var chatMessages = $('<div>');
+    chatMessages.css({
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      left: 0,
+      width: 'auto',
+      height: 'auto',
+      'overflow-x': 'hidden',
+      'overflow-y': 'auto'
     });
-    liChat.append(aChat);
-    liArchives.append(aArchives);
-    ul.append(liChat).append(liArchives);
-    top.removeClass('hidden');
-    top.empty();
-    top.append(ul);
-    divChatRoom.append(divChatMessages);
-    divChatRoom.append(divStatusMessage);
-    divEmberChat.append(divChatRoom);
-    divChat.append(divEmberChat);
-    rightColumnContent.append(divChat);
-    archives.css('top', '51px');
-    aChat.click();
-    ReChat._chatMessageContainer = divChatMessages;
-    ReChat._statusMessageContainer = divStatusMessage;
+    container.append(chatMessages);
+    ReChat._chatMessageContainer = chatMessages;
+
+    ReChat._container = container;
+    $('body').append(container);
+
+    $('#right_close').click(function() {
+      if (!$(this).hasClass('closed')) {
+        container.hide();
+      } else {
+        container.show();
+      }
+    });
   },
 
   prepareRandomColors: function() {
@@ -338,6 +334,7 @@ var ReChat = {
   },
 
   stop: function() {
+    ReChat._container.remove();
     ReChat._stopped = true;
   }
 }

@@ -212,9 +212,9 @@ var ReChat = {
         }
       }
 
-      var numberOfChatMessagesDisplayed = ReChat._chatMessageContainer.find('.chat-line').length;
+      var numberOfChatMessagesDisplayed = ReChat._chatMessageContainer.find('.rechat-chat-line').length;
       if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
-        ReChat._chatMessageContainer.find('.chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
+        ReChat._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
       }
 
       if (!ReChat._cacheExhaustionHandled && ReChat._cachedMessages.length < ReChat.cacheExhaustionLimit) {
@@ -248,7 +248,7 @@ var ReChat = {
   },
 
   formatChatMessage: function(messageData) {
-    var line = $('<div>').css('padding', '4px'),
+    var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
         from = $('<span>').addClass('from').css({
           color: ReChat.colorForNickname(messageData.from),
           'font-weight': 'bold'

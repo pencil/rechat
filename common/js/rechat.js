@@ -334,7 +334,9 @@ var ReChat = {
   },
 
   stop: function() {
-    ReChat._container.remove();
+    if (ReChat._container) {
+      ReChat._container.remove();
+    }
     ReChat._stopped = true;
   }
 }
@@ -349,7 +351,7 @@ $(document).ready(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
       var ogVideoTag = $('meta[property="og:video"]');
-      if (ogVideoTag.length) {
+      if (ogVideoTag.length && $('div.archives-contain').length && $('div#player object').length) {
         var videoUrl = ogVideoTag.attr('content'),
             videoIdRegex = /videoId=([a-z0-9]+)/,
             match = videoIdRegex.exec(videoUrl);

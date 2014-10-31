@@ -334,10 +334,18 @@ var ReChat = {
   },
 
   stop: function() {
+    ReChat._stopped = true;
+    if (ReChat._loadingTimeout) {
+      clearTimeout(ReChat._loadingTimeout);
+    }
     if (ReChat._container) {
+      ReChat._container.empty();
       ReChat._container.remove();
     }
-    ReChat._stopped = true;
+    ReChat._previousVideoTime = undefined;
+    ReChat._cachePopulationId = undefined;
+    ReChat._newestMessageDate = undefined;
+    ReChat._messageStreamEndAt = undefined;
   }
 }
 
@@ -364,6 +372,7 @@ $(document).ready(function() {
             var recordedAt = new Date(Date.parse(result.recorded_at));
             ReChat.videoId = videoId;
             ReChat.recordedAt = recordedAt;
+            console.info('ReChat: start');
             ReChat.start();
           });
 
@@ -375,6 +384,7 @@ $(document).ready(function() {
       }
       lastUrl = currentUrl;
     } else if(lastUrl != currentUrl) {
+      console.info('ReChat: stop');
       ReChat.stop();
       lastUrl = false;
     }

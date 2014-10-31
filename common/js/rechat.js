@@ -274,6 +274,7 @@ var ReChat = {
       'z-index': 4,
       background: '#f2f2f2'
     });
+    container.addClass('rightcol-content');
     var statusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
     ReChat._statusMessageContainer = statusMessage;
     container.append(statusMessage);

@@ -4,6 +4,7 @@ var ReChat = {
   cacheExhaustionLimit: 100,
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
+  nicknameColors: Please.make_color({ colors_returned: 50, saturation: 0.7 }),
 
   Browser: {
     Safari: 0,
@@ -75,286 +76,298 @@ var ReChat = {
     return null;
   },
 
-  loadMessages: function(recievedAfter, callback) {
-    ReChat.get(ReChat.searchBaseUrl + ReChat.videoId,
-               { 'after': recievedAfter.toISOString() },
-               callback,
-               function() {
-                 // request failed, let's try again in 5 seconds
-                 setTimeout(function() {
-                   ReChat.loadMessages(recievedAfter, callback);
-                 }, 5000);
-               });
-  },
+};
 
-  currentVideoTime: function() {
-    return parseInt($('body').attr('rechat-video-time')) || 0;
-  },
+ReChat.Playback = function(videoId, recordedAt) {
+  this.videoId = videoId;
+  this.recordedAt = recordedAt;
+};
 
-  currentAbsoluteVideoTime: function() {
-    return new Date(+ReChat.recordedAt + ReChat.currentVideoTime() * 1000);
-  },
+ReChat.Playback.prototype._prepareInterface = function() {
+  var container = $('<div>').css({
+    'position': 'absolute',
+    'right': 0,
+    'top': 0,
+    'bottom': 0,
+    'width': '339px',
+    'z-index': 4,
+    'background-color': '#f2f2f2'
+  }).addClass('rightcol-content');
 
-  autoPopulateCache: function(dropExistingCache) {
-    var newestMessageDate = ReChat._newestMessageDate || ReChat.currentAbsoluteVideoTime(),
-        populationId = new Date();
-    if (ReChat._messageStreamEndAt && newestMessageDate >= ReChat._messageStreamEndAt) {
-      console.info('No more messages available, aborting...');
-      return;
-    }
-    ReChat._cachePopulationId = populationId;
-    var loadingFunction = function() {
-      console.info('Loading messages from the server');
-      ReChat.loadMessages(newestMessageDate, function(result) {
-        if (populationId != ReChat._cachePopulationId) {
-          console.info('Population ID changed, lock expired, aborting...');
-          return;
-        }
-        if (!result.hits.total) {
-          ReChat._messageStreamEndAt = newestMessageDate;
-        } else {
-          var hits = result.hits.hits,
-          newestMessage = hits[hits.length - 1];
-          ReChat._newestMessageDate = new Date(newestMessage._source.recieved_at);
-          if (result.hits.total == hits.length) {
-            ReChat._messageStreamEndAt = ReChat._newestMessageDate;
-          }
-          if (dropExistingCache) {
-            ReChat._cachedMessages = hits;
-          } else {
-            Array.prototype.push.apply(ReChat._cachedMessages, hits);
-          }
-        }
-      });
-    };
+  var statusMessage = $('<div>').css({
+    'position': 'relative',
+    'top': '50px',
+    'text-align': 'center',
+    'background-repeat': 'no-repeat',
+    'background-position': 'center top',
+    'background-size': '40px 40px',
+    'padding': '60px 20px'
+  });
+  container.append(statusMessage);
+  this._statusMessageContainer = statusMessage;
 
-    if (dropExistingCache) {
-      if (ReChat._loadingTimeout) {
-        clearTimeout(ReChat._loadingTimeout);
-      }
-      ReChat._loadingTimeout = setTimeout(loadingFunction, ReChat.loadingDelay);
+  var chatMessages = $('<div>').css({
+    'position': 'absolute',
+    'right': 0,
+    'top': 0,
+    'bottom': 0,
+    'left': 0,
+    'width': 'auto',
+    'height': 'auto',
+    'overflow-x': 'hidden',
+    'overflow-y': 'auto'
+  });
+  container.append(chatMessages);
+  this._chatMessageContainer = chatMessages;
+
+  this._container = container;
+  $('body').append(container);
+
+  $('#right_close').click(function() {
+    if (!$(this).hasClass('closed')) {
+      container.hide();
     } else {
-      loadingFunction();
+      container.show();
     }
-  },
+  });
+};
 
-  showStatusMessage: function(message, statusImage) {
-    if (!statusImage) {
-      statusImage = 'spinner.gif';
-    }
-    ReChat._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
-    ReChat._chatMessageContainer.empty();
-    ReChat._statusMessageContainer.text(message);
-    ReChat._statusMessageContainer.show();
-  },
-
-  hideStatusMessage: function() {
-    ReChat._statusMessageContainer.hide();
-  },
-
-
-  scrolledToBottom: function() {
-    return Math.abs(ReChat._chatMessageContainer[0].scrollHeight - ReChat._chatMessageContainer.scrollTop() - ReChat._chatMessageContainer.outerHeight()) <= 30;
-  },
-
-  scrollToBottom: function() {
-    ReChat._chatMessageContainer.scrollTop(ReChat._chatMessageContainer[0].scrollHeight);
-  },
-
-  replay: function() {
-    var currentVideoTime = ReChat.currentVideoTime(),
-        currentAbsoluteVideoTime = ReChat.currentAbsoluteVideoTime(),
-        previousVideoTime = ReChat._previousVideoTime;
-    if (typeof previousVideoTime == 'undefined') {
-      // first invocation => populate cache
-      ReChat.showStatusMessage('Loading messages...');
-      console.info('First invocation, populating cache for the first time');
-      ReChat.autoPopulateCache(true);
-    } else if (previousVideoTime > currentVideoTime || currentVideoTime - previousVideoTime > 60) {
-      console.info('Time jumped, discarding cache and starting over');
-      ReChat.showStatusMessage('Loading messages...');
-      ReChat._newestMessageDate = null;
-      ReChat._cachedMessages = [];
-      ReChat.autoPopulateCache(true);
-    } else if (currentAbsoluteVideoTime >= ReChat._messageStreamEndAt) {
-      if (ReChat._chatMessageContainer.is(':empty')) {
-        ReChat.showStatusMessage('Sorry, no chat messages for this VOD available', 'sad.png');
-      }
-    } else if (!ReChat._cachedMessages.length) {
-      console.info('Cache is empty, waiting for population...');
-    } else {
-      if (ReChat._cachedMessages.length >= ReChat.cacheExhaustionLimit) {
-        ReChat._cacheExhaustionHandled = false;
-      }
-      ReChat.hideStatusMessage();
-      while (ReChat._cachedMessages.length) {
-        var message = ReChat._cachedMessages[0],
-            messageData = message._source,
-            messageDate = new Date(Date.parse(messageData.recieved_at));
-        if (messageDate <= currentAbsoluteVideoTime) {
-          ReChat._cachedMessages.shift();
-          var atBottom = ReChat.scrolledToBottom();
-          ReChat._chatMessageContainer.append(ReChat.formatChatMessage(messageData));
-          if (atBottom) {
-            ReChat.scrollToBottom();
-          }
-        } else {
-          if (ReChat._chatMessageContainer.is(':empty')) {
-            var secondsToFirstMessage = Math.floor(messageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
-            if (secondsToFirstMessage > 0) {
-              var minutesToFirstMessage = Math.floor(secondsToFirstMessage / 60);
-              secondsToFirstMessage -= minutesToFirstMessage * 60;
-              secondsToFirstMessage = secondsToFirstMessage < 10 ? '0' + secondsToFirstMessage : secondsToFirstMessage;
-              ReChat.showStatusMessage('First recorded message will show up in ' + minutesToFirstMessage + ':' + secondsToFirstMessage);
-            }
-          }
-          break;
-        }
-      }
-
-      var numberOfChatMessagesDisplayed = ReChat._chatMessageContainer.find('.rechat-chat-line').length;
-      if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
-        ReChat._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
-      }
-
-      if (!ReChat._cacheExhaustionHandled && ReChat._cachedMessages.length < ReChat.cacheExhaustionLimit) {
-        ReChat._cacheExhaustionHandled = true;
-        ReChat.autoPopulateCache();
-      }
-    }
-    ReChat._previousVideoTime = currentVideoTime;
-    if (!ReChat._stopped) {
-      setTimeout(ReChat.replay, 200);
-    }
-  },
-
-  colorForNickname: function(nickname) {
-    var hash = 0, i, chr, len;
-    if (nickname.length == 0) return hash;
-    for (i = 0, len = nickname.length; i < len; i++) {
-      chr   = nickname.charCodeAt(i);
-      hash  = ((hash << 5) - hash) + chr;
-      hash |= 0; // Convert to 32bit integer
-    }
-    hash = Math.abs(hash);
-    return ReChat._nicknameColors[hash % (ReChat._nicknameColors.length - 1)];
-  },
-
-  replaceEmoticons: function(text) {
-    $.each(ReChat._emoticons, function(i, emoticon) {
-      text = text.replace(emoticon.regex, emoticon.code);
-    });
-    return text;
-  },
-
-  formatChatMessage: function(messageData) {
-    var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
-        from = $('<span>').addClass('from').css({
-          color: ReChat.colorForNickname(messageData.from),
-          'font-weight': 'bold'
-        }),
-        colon = $('<span>').addClass('colon'),
-        message = $('<span>').addClass('message');
-    from.text(messageData.from);
-    colon.text(':');
-    message.text(messageData.message);
-    message.html(ReChat.replaceEmoticons(message.html()));
-    line.append(from).append(colon).append(' ').append(message);
-    return line;
-  },
-
-  prepareInterface: function() {
-    var container = $('<div>');
-    container.css({
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      bottom: 0,
-      width: '339px',
-      'z-index': 4,
-      background: '#f2f2f2'
-    });
-    container.addClass('rightcol-content');
-    var statusMessage = $('<div>').css({ 'position': 'relative', 'top': '50px', 'text-align': 'center', 'background-repeat': 'no-repeat', 'background-position': 'center top', 'background-size': '40px 40px', 'padding': '60px 20px' });
-    ReChat._statusMessageContainer = statusMessage;
-    container.append(statusMessage);
-
-    var chatMessages = $('<div>');
-    chatMessages.css({
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      bottom: 0,
-      left: 0,
-      width: 'auto',
-      height: 'auto',
-      'overflow-x': 'hidden',
-      'overflow-y': 'auto'
-    });
-    container.append(chatMessages);
-    ReChat._chatMessageContainer = chatMessages;
-
-    ReChat._container = container;
-    $('body').append(container);
-
-    $('#right_close').click(function() {
-      if (!$(this).hasClass('closed')) {
-        container.hide();
-      } else {
-        container.show();
+ReChat.Playback.prototype._loadEmoticons = function() {
+  var that = this;
+  this._emoticons = [];
+  ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
+    $.each(result.emoticons, function(i, emoticon) {
+      var image = emoticon.images[0];
+      if (image.emoticon_set === null) {
+        that._emoticons.push({
+          regex: new RegExp(emoticon.regex, 'g'),
+          code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
+        });
       }
     });
-  },
+  });
+};
 
-  prepareRandomColors: function() {
-    ReChat._nicknameColors = Please.make_color({ colors_returned: 50, saturation: 0.7 });
-  },
+ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
+  var that = this;
+  ReChat.get(ReChat.searchBaseUrl + this.videoId,
+             { 'after': recievedAfter.toISOString() },
+             callback,
+             function() {
+               // request failed, let's try again in 5 seconds
+               setTimeout(function() {
+                 if (!that._stopped) {
+                   that._loadMessages(recievedAfter, callback);
+                 }
+               }, 5000);
+             });
+};
 
-  loadEmoticons: function() {
-    ReChat._emoticons = [];
-    ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
-      $.each(result.emoticons, function(i, emoticon) {
-        var image = emoticon.images[0];
-        if (image.emoticon_set === null) {
-          ReChat._emoticons.push({
-            regex: new RegExp(emoticon.regex, 'g'),
-            code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
-          });
-        }
-      });
-    });
-  },
+ReChat.Playback.prototype._currentVideoTime = function() {
+  return parseInt($('body').attr('rechat-video-time')) || 0;
+};
 
-  start: function() {
-    ReChat._stopped = false;
-    ReChat._cachedMessages = [];
-    ReChat.prepareInterface();
-    ReChat.prepareRandomColors();
-    ReChat.loadEmoticons();
-    ReChat.replay();
-  },
+ReChat.Playback.prototype._currentAbsoluteVideoTime = function() {
+  return new Date(+this.recordedAt + this._currentVideoTime() * 1000);
+};
 
-  stop: function() {
-    ReChat._stopped = true;
-    if (ReChat._loadingTimeout) {
-      clearTimeout(ReChat._loadingTimeout);
-    }
-    if (ReChat._container) {
-      ReChat._container.empty();
-      ReChat._container.remove();
-    }
-    ReChat._previousVideoTime = undefined;
-    ReChat._cachePopulationId = undefined;
-    ReChat._newestMessageDate = undefined;
-    ReChat._messageStreamEndAt = undefined;
+ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
+  var newestMessageDate = this._newestMessageDate || this._currentAbsoluteVideoTime(),
+      populationId = new Date(),
+      that = this;
+  if (this._messageStreamEndAt && newestMessageDate >= this._messageStreamEndAt) {
+    console.info('No more messages available, aborting...');
+    return;
   }
-}
+  this._cachePopulationId = populationId;
+  var loadingFunction = function() {
+    console.info('Loading messages from the server');
+    that._loadMessages(newestMessageDate, function(result) {
+      if (populationId != that._cachePopulationId) {
+        console.info('Population ID changed, lock expired, aborting...');
+        return;
+      }
+      if (!result.hits.total) {
+        that._messageStreamEndAt = newestMessageDate;
+      } else {
+        var hits = result.hits.hits,
+        newestMessage = hits[hits.length - 1];
+        that._newestMessageDate = new Date(newestMessage._source.recieved_at);
+        if (result.hits.total == hits.length) {
+          that._messageStreamEndAt = that._newestMessageDate;
+        }
+        if (dropExistingCache) {
+          that._cachedMessages = hits;
+        } else {
+          Array.prototype.push.apply(that._cachedMessages, hits);
+        }
+      }
+    });
+  };
+
+  if (dropExistingCache) {
+    if (this._loadingTimeout) {
+      clearTimeout(this._loadingTimeout);
+    }
+    this._loadingTimeout = setTimeout(loadingFunction, ReChat.loadingDelay);
+  } else {
+    loadingFunction();
+  }
+};
+
+ReChat.Playback.prototype._showStatusMessage = function(message, statusImage) {
+  if (!statusImage) {
+    statusImage = 'spinner.gif';
+  }
+  this._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
+  this._chatMessageContainer.empty();
+  this._statusMessageContainer.text(message);
+  this._statusMessageContainer.show();
+};
+
+ReChat.Playback.prototype._hideStatusMessage = function() {
+  this._statusMessageContainer.hide();
+};
+
+ReChat.Playback.prototype._scrolledToBottom = function() {
+  return Math.abs(this._chatMessageContainer[0].scrollHeight - this._chatMessageContainer.scrollTop() - this._chatMessageContainer.outerHeight()) <= 30;
+};
+
+ReChat.Playback.prototype._scrollToBottom = function() {
+  this._chatMessageContainer.scrollTop(this._chatMessageContainer[0].scrollHeight);
+};
+
+ReChat.Playback.prototype._replay = function() {
+  var currentVideoTime = this._currentVideoTime(),
+      currentAbsoluteVideoTime = this._currentAbsoluteVideoTime(),
+      previousVideoTime = this._previousVideoTime,
+      that = this;
+  if (typeof previousVideoTime == 'undefined') {
+    // first invocation => populate cache
+    this._showStatusMessage('Loading messages...');
+    console.info('First invocation, populating cache for the first time');
+    this._autoPopulateCache(true);
+  } else if (previousVideoTime > currentVideoTime || currentVideoTime - previousVideoTime > 60) {
+    console.info('Time jumped, discarding cache and starting over');
+    this._showStatusMessage('Loading messages...');
+    this._newestMessageDate = null;
+    this._cachedMessages = [];
+    this._autoPopulateCache(true);
+  } else if (currentAbsoluteVideoTime >= this._messageStreamEndAt) {
+    if (this._chatMessageContainer.is(':empty')) {
+      this._showStatusMessage('Sorry, no chat messages for this VOD available', 'sad.png');
+    }
+  } else if (!this._cachedMessages || !this._cachedMessages.length) {
+    console.info('Cache is empty, waiting for population...');
+  } else {
+    if (this._cachedMessages.length >= ReChat.cacheExhaustionLimit) {
+      this._cacheExhaustionHandled = false;
+    }
+    this._hideStatusMessage();
+    while (this._cachedMessages.length) {
+      var message = this._cachedMessages[0],
+          messageData = message._source,
+          messageDate = new Date(Date.parse(messageData.recieved_at));
+      if (messageDate <= currentAbsoluteVideoTime) {
+        this._cachedMessages.shift();
+        var atBottom = this._scrolledToBottom();
+        this._chatMessageContainer.append(this._formatChatMessage(messageData));
+        if (atBottom) {
+          this._scrollToBottom();
+        }
+      } else {
+        if (this._chatMessageContainer.is(':empty')) {
+          var secondsToFirstMessage = Math.floor(messageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
+          if (secondsToFirstMessage > 0) {
+            var minutesToFirstMessage = Math.floor(secondsToFirstMessage / 60);
+            secondsToFirstMessage -= minutesToFirstMessage * 60;
+            secondsToFirstMessage = secondsToFirstMessage < 10 ? '0' + secondsToFirstMessage : secondsToFirstMessage;
+            this._showStatusMessage('First recorded message will show up in ' + minutesToFirstMessage + ':' + secondsToFirstMessage);
+          }
+        }
+        break;
+      }
+    }
+
+    var numberOfChatMessagesDisplayed = this._chatMessageContainer.find('.rechat-chat-line').length;
+    if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
+      this._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
+    }
+
+    if (!this._cacheExhaustionHandled && this._cachedMessages.length < ReChat.cacheExhaustionLimit) {
+      this._cacheExhaustionHandled = true;
+      this._autoPopulateCache();
+    }
+  }
+  this._previousVideoTime = currentVideoTime;
+  if (!this._stopped) {
+    setTimeout(function() {
+      that._replay();
+    }, 200);
+  }
+};
+
+ReChat.Playback.prototype._colorForNickname = function(nickname) {
+  var hash = 0, i, chr, len;
+  if (nickname.length == 0) return hash;
+  for (i = 0, len = nickname.length; i < len; i++) {
+    chr   = nickname.charCodeAt(i);
+    hash  = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  hash = Math.abs(hash);
+  return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
+};
+
+ReChat.Playback.prototype._replaceEmoticons = function(text) {
+  $.each(this._emoticons, function(i, emoticon) {
+    text = text.replace(emoticon.regex, emoticon.code);
+  });
+  return text;
+};
+
+ReChat.Playback.prototype._formatChatMessage = function(messageData) {
+  var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+      from = $('<span>').addClass('from').css({
+        'color': this._colorForNickname(messageData.from),
+        'font-weight': 'bold'
+      }),
+      colon = $('<span>').addClass('colon'),
+      message = $('<span>').addClass('message');
+  from.text(messageData.from);
+  colon.text(':');
+  message.text(messageData.message);
+  message.html(this._replaceEmoticons(message.html()));
+  line.append(from).append(colon).append(' ').append(message);
+  return line;
+};
+
+ReChat.Playback.prototype.start = function() {
+  console.info('ReChat: start');
+  this._prepareInterface();
+  this._loadEmoticons();
+  this._replay();
+};
+
+ReChat.Playback.prototype.stop = function() {
+  this._stopped = true;
+  if (this._loadingTimeout) {
+    clearTimeout(this._loadingTimeout);
+  }
+  if (this._container) {
+    this._container.empty();
+    this._container.remove();
+  }
+  this._emoticons = [];
+  this._cachedMessages = [];
+};
 
 $(document).ready(function() {
   if (window.top !== window) {
     return;
   }
-  var lastUrl = false;
+  var lastUrl = false,
+      currentPlayback = false;
   // TODO: find a better solution for this...
   setInterval(function() {
     var currentUrl = document.location.href;
@@ -371,10 +384,8 @@ $(document).ready(function() {
               return;
             }
             var recordedAt = new Date(Date.parse(result.recorded_at));
-            ReChat.videoId = videoId;
-            ReChat.recordedAt = recordedAt;
-            console.info('ReChat: start');
-            ReChat.start();
+            currentPlayback = new ReChat.Playback(videoId, recordedAt);
+            currentPlayback.start();
           });
 
           // Inject script to extract video time
@@ -385,8 +396,10 @@ $(document).ready(function() {
       }
       lastUrl = currentUrl;
     } else if(lastUrl != currentUrl) {
-      console.info('ReChat: stop');
-      ReChat.stop();
+      if (currentPlayback) {
+        currentPlayback.stop();
+        currentPlayback = false;
+      }
       lastUrl = false;
     }
   }, 1000);

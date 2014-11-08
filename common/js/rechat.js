@@ -221,7 +221,10 @@ ReChat.Playback.prototype._showStatusMessage = function(message, statusImage) {
   if (!statusImage) {
     statusImage = 'spinner.gif';
   }
-  this._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
+  if (this._lastStatusImage != statusImage) {
+    this._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
+    this._lastStatusImage = statusImage;
+  }
   this._chatMessageContainer.empty();
   this._statusMessageContainer.text(message);
   this._statusMessageContainer.show();

@@ -5,7 +5,7 @@
   "description": "Adds chat messages from the past to your favorite Twitch VODs",
   "author": "Nils Caspar",
   "license": "MIT",
-  "version": "0.7.3",
+  "version": "0.8.0",
 
   "permissions": {
     "cross-domain-content": [

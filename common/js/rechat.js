@@ -5,6 +5,7 @@ var ReChat = {
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
   nicknameColors: Please.make_color({ colors_returned: 50, saturation: 0.7 }),
+  defaultStreamDelay: 17,
 
   Browser: {
     Safari: 0,
@@ -81,6 +82,7 @@ var ReChat = {
 ReChat.Playback = function(videoId, recordedAt) {
   this.videoId = videoId;
   this.recordedAt = recordedAt;
+  this.streamDelay = ReChat.defaultStreamDelay;
 };
 
 ReChat.Playback.prototype._prepareInterface = function() {
@@ -164,7 +166,7 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
 };
 
 ReChat.Playback.prototype._currentVideoTime = function() {
-  return parseInt($('body').attr('rechat-video-time')) || 0;
+  return (parseInt($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
 };
 
 ReChat.Playback.prototype._currentAbsoluteVideoTime = function() {
@@ -181,7 +183,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
   }
   this._cachePopulationId = populationId;
   var loadingFunction = function() {
-    console.info('Loading messages from the server');
+    console.info('Loading messages from the server that got recordet after ' + newestMessageDate);
     that._loadMessages(newestMessageDate, function(result) {
       if (populationId != that._cachePopulationId) {
         console.info('Population ID changed, lock expired, aborting...');

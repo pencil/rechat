@@ -380,12 +380,13 @@ $(document).ready(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
       var ogVideoTag = $('meta[property="og:video"]');
-      if (ogVideoTag.length && $('div.archives-contain').length && $('div#player object').length) {
+      if (ogVideoTag.length && $('div.archive_info_title').length && $('div#player object').length) {
         var videoUrl = ogVideoTag.attr('content'),
             videoIdRegex = /videoId=([a-z0-9]+)/,
             match = videoIdRegex.exec(videoUrl);
         if (match != null) {
           var videoId = match[1];
+          console.info('VOD ' + videoId + ' detected');
           ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
             if (currentUrl != document.location.href) {
               return;

@@ -60,7 +60,7 @@
 		</dict>
 	</dict>
 	<key>Update Manifest URL</key>
-	<string>http://www.rechat.org/AppleExtensionUpdateProperties.plist</string>
+	<string>https://www.rechat.org/AppleExtensionUpdateProperties.plist</string>
 	<key>Website</key>
 	<string>http://www.rechat.org/</string>
 </dict>

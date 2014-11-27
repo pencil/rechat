@@ -138,6 +138,11 @@ ReChat.Playback.prototype._loadEmoticons = function() {
   var that = this;
   this._emoticons = [];
   ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
+    if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
+      try {
+        result = JSON.parse(result);
+      } catch(e) {}
+    }
     $.each(result.emoticons, function(i, emoticon) {
       var image = emoticon.images[0];
       if (image.emoticon_set === null) {

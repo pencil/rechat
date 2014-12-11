@@ -18,7 +18,8 @@
   "permissions": [
     "http://www.twitch.tv/",
     "https://api.twitch.tv/kraken/",
-    "http://*.rechat.org/"
+    "http://*.rechat.org/",
+	"http://twitchemotes.com/"
   ],
   "content_security_policy": "script-src 'self' https://api.twitch.tv/; object-src 'self'",
 

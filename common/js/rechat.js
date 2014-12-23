@@ -161,15 +161,16 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
              { 'after': recievedAfter.toISOString() },
              callback,
              function(response) {
-               if (!response || response.status >= 500) {
+               if (response && response.status == 404) {
+                 // invalid VOD
+                 that._messageStreamEndAt = recievedAfter;
+               } else {
                  // server error, let's try again in 10 seconds
                  setTimeout(function() {
                    if (!that._stopped) {
                      that._loadMessages(recievedAfter, callback);
                    }
                  }, 10000);
-               } else {
-                 that._messageStreamEndAt = recievedAfter;
                }
              });
 };

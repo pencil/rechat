@@ -52,8 +52,8 @@ var ReChat = {
             handler = function(event) {
               if(event.name == uuid) {
                 safari.self.removeEventListener('message', handler);
-                if(event.message == 'error') {
-                  failure && failure();
+                if(!event.message || event.message.error) {
+                  failure && failure(event.message);
                 } else {
                   success(event.message);
                 }
@@ -160,13 +160,17 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
   ReChat.get(ReChat.searchBaseUrl + this.videoId,
              { 'after': recievedAfter.toISOString() },
              callback,
-             function() {
-               // request failed, let's try again in 5 seconds
-               setTimeout(function() {
-                 if (!that._stopped) {
-                   that._loadMessages(recievedAfter, callback);
-                 }
-               }, 5000);
+             function(response) {
+               if (!response || response.status >= 500) {
+                 // server error, let's try again in 10 seconds
+                 setTimeout(function() {
+                   if (!that._stopped) {
+                     that._loadMessages(recievedAfter, callback);
+                   }
+                 }, 10000);
+               } else {
+                 that._messageStreamEndAt = recievedAfter;
+               }
              });
 };
 

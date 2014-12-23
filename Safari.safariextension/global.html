@@ -6,8 +6,8 @@
         if(event.message.type == 'GETRequest') {
           jQuery.get(event.message.url, event.message.params, function(result) {
             event.target.page.dispatchMessage(event.name, result);
-          }).fail(function() {
-            event.target.page.dispatchMessage(event.name, 'error');
+          }).fail(function(result) {
+            event.target.page.dispatchMessage(event.name, { error: true, status: result.status });
           });
         }
       }

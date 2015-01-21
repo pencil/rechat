@@ -1,6 +1,7 @@
 var ReChat = {
   // Settings:
   searchBaseUrl: 'http://search.rechat.org/videos/',
+  
   cacheExhaustionLimit: 100,
   chatDisplayLimit: 1000,
   loadingDelay: 5000,
@@ -79,8 +80,10 @@ var ReChat = {
 
 };
 
-ReChat.Playback = function(videoId, recordedAt) {
+ReChat.Playback = function(videoId, channelName, recordedAt) {
   this.videoId = videoId;
+  this.channelName = channelName;
+  
   this.recordedAt = recordedAt;
   this.streamDelay = ReChat.defaultStreamDelay;
 };
@@ -154,6 +157,19 @@ ReChat.Playback.prototype._prepareInterface = function() {
 ReChat.Playback.prototype._loadEmoticons = function() {
   var that = this;
   this._emoticons = [];
+  ReChat.get('http://twitchemotes.com/subscriber.json', {}, function(result) {
+	result = $.map(result, function(entry) {
+	  var match = entry._title.toLowerCase() == that.channelName;
+	  return match ? entry : null;
+	});
+	console.log("Subscriber emotes found");
+    $.each(result[0].emotes, function(emoticon, image) {
+      that._emoticons.push({
+        regex: new RegExp(emoticon, 'g'),
+        code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(http:' + image + ')', 'height': 28, 'width': 28}).prop('outerHTML').replace(/&quot;/g, "'")
+      });
+    });
+  });
   ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
     if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
       try {
@@ -414,16 +430,21 @@ $(document).ready(function() {
       if (ogVideoTag.length && $('div.archive_info_title').length && $('div#player object').length) {
         var videoUrl = ogVideoTag.attr('content'),
             videoIdRegex = /videoId=([a-z0-9]+)/,
-            match = videoIdRegex.exec(videoUrl);
-        if (match != null) {
-          var videoId = match[1];
+            videoIdMatch = videoIdRegex.exec(videoUrl);
+		var channelNameRegex = /www.twitch.tv\/([a-z0-9]+)/,
+		    channelNameMatch = channelNameRegex.exec(currentUrl);
+			
+        if (videoIdMatch != null && channelNameMatch != null) {
+          var videoId = videoIdMatch[1];
+		  var channelName = channelNameMatch[1];
+		  
           console.info('VOD ' + videoId + ' detected');
           ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
             if (currentUrl != document.location.href) {
               return;
             }
             var recordedAt = new Date(Date.parse(result.recorded_at));
-            currentPlayback = new ReChat.Playback(videoId, recordedAt);
+            currentPlayback = new ReChat.Playback(videoId, channelName, recordedAt);
             currentPlayback.start();
           });
 

@@ -342,7 +342,15 @@ ReChat.Playback.prototype._replay = function() {
   }
 };
 
-ReChat.Playback.prototype._colorForNickname = function(nickname) {
+ReChat.Playback.prototype._colorForNickname = function(nickname, usercolor) {
+  if (usercolor) {
+    return '#' + ('000000' + usercolor.toString(16)).slice(-6);
+  } else {
+    return this._generateColorForNickname(nickname);
+  }
+};
+
+ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   var hash = 0, i, chr, len;
   if (nickname.length == 0) return hash;
   for (i = 0, len = nickname.length; i < len; i++) {
@@ -372,7 +380,7 @@ ReChat.Playback.prototype._replaceEmoticons = function(text, emoticon_set) {
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
       from = $('<span>').addClass('from').css({
-        'color': this._colorForNickname(messageData.from),
+        'color': this._colorForNickname(messageData.from, messageData.usercolor),
         'font-weight': 'bold'
       }),
       colon = $('<span>').addClass('colon'),

@@ -153,7 +153,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
 
 ReChat.Playback.prototype._loadEmoticons = function() {
   var that = this;
-  this._emoticons = [];
+  this._emoticons = {};
   ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
     if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
       try {
@@ -162,12 +162,13 @@ ReChat.Playback.prototype._loadEmoticons = function() {
     }
     $.each(result.emoticons, function(i, emoticon) {
       var image = emoticon.images[0];
-      if (image.emoticon_set === null) {
-        that._emoticons.push({
-          regex: new RegExp(emoticon.regex, 'g'),
-          code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
-        });
+      if (!that._emoticons[image.emoticon_set]) {
+        that._emoticons[image.emoticon_set] = [];
       }
+      that._emoticons[image.emoticon_set].push({
+        regex: new RegExp(emoticon.regex, 'g'),
+        code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
+      });
     });
   });
 };
@@ -353,9 +354,17 @@ ReChat.Playback.prototype._colorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticons = function(text) {
-  $.each(this._emoticons, function(i, emoticon) {
-    text = text.replace(emoticon.regex, emoticon.code);
+ReChat.Playback.prototype._replaceEmoticons = function(text, emoticon_set) {
+  var that = this;
+  if (!emoticon_set) {
+    emoticon_set = [];
+  }
+  $.each(emoticon_set.concat([null]), function(i, emoticon_set_id) {
+    if (that._emoticons[emoticon_set_id]) {
+      $.each(that._emoticons[emoticon_set_id], function(j, emoticon) {
+        text = text.replace(emoticon.regex, emoticon.code);
+      });
+    }
   });
   return text;
 };
@@ -371,7 +380,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   from.text(messageData.from);
   colon.text(':');
   message.text(messageData.message);
-  message.html(this._replaceEmoticons(message.html()));
+  message.html(this._replaceEmoticons(message.html(), messageData.emoteset));
   line.append(from).append(colon).append(' ').append(message);
   return line;
 };
@@ -392,7 +401,7 @@ ReChat.Playback.prototype.stop = function() {
     this._container.empty();
     this._container.remove();
   }
-  this._emoticons = [];
+  this._emoticons = {};
   this._cachedMessages = [];
 
   if (this._observer) {

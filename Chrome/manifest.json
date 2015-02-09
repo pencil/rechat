@@ -5,8 +5,8 @@
   "short_name": "ReChat",
   "description": "Adds chat messages from the past to your favorite Twitch VODs.",
   "author": "Nils Caspar",
-  "homepage_url": "http://www.rechat.org/",
-  "version": "0.8.4",
+  "homepage_url": "https://www.rechat.org/",
+  "version": "0.9.0",
 
   "icons": {
     "16": "icon16.png",

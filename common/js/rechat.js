@@ -158,7 +158,7 @@ ReChat.Playback.prototype._loadEmoticons = function() {
         that._emoticons[image.emoticon_set] = [];
       }
       that._emoticons[image.emoticon_set].push({
-        regex: new RegExp(emoticon.regex, 'g'),
+        regex: new RegExp('\\b' + emoticon.regex + '\\b', 'g'),
         code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
       });
     });

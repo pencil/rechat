@@ -163,7 +163,7 @@ ReChat.Playback.prototype._loadEmoticons = function() {
       image_set_url = '//static-cdn.jtvnw.net/emoticons/v1/' + emoticon.id;
       that._emoticons[emoticon.emoticon_set].push({
         regex: new RegExp('\\b' + emoticon.code + '\\b', 'g'),
-        code: $('<img>').addClass('emoticon').attr({ 'src': image_set_url + '/1.0', 'srcset': image_set_url + '/2.0 2x' }).prop('outerHTML').replace(/&quot;/g, "'")
+        code: "<img class='emoticon' src='" + image_set_url + "/1.0' srcset='" + image_set_url + "/2.0 2x' />"
       });
     });
   });

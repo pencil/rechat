@@ -78,6 +78,7 @@ ReChat.Playback = function(videoId, recordedAt) {
 };
 
 ReChat.Playback.prototype._prepareInterface = function() {
+  var that = this;
   var container = $('<div>').css({
     'position': 'absolute',
     'right': 0,
@@ -113,6 +114,9 @@ ReChat.Playback.prototype._prepareInterface = function() {
   });
   container.append(chatMessages);
   this._chatMessageContainer = chatMessages;
+  chatMessages.on('scroll', function() {
+    that._userScrolling = !that._scrolledToBottom();
+  });
 
   this._container = container;
   $('body').append(container);
@@ -146,20 +150,20 @@ ReChat.Playback.prototype._prepareInterface = function() {
 ReChat.Playback.prototype._loadEmoticons = function() {
   var that = this;
   this._emoticons = {};
-  ReChat.get('https://api.twitch.tv/kraken/chat/emoticons', {}, function(result) {
+  ReChat.get('https://api.twitch.tv/kraken/chat/emoticon_images', {}, function(result) {
     if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
       try {
         result = JSON.parse(result);
       } catch(e) {}
     }
     $.each(result.emoticons, function(i, emoticon) {
-      var image = emoticon.images[0];
-      if (!that._emoticons[image.emoticon_set]) {
-        that._emoticons[image.emoticon_set] = [];
+      if (!that._emoticons[emoticon.emoticon_set]) {
+        that._emoticons[emoticon.emoticon_set] = [];
       }
-      that._emoticons[image.emoticon_set].push({
-        regex: new RegExp('\\b' + emoticon.regex + '\\b', 'g'),
-        code: $('<span>').addClass('emoticon').css({ 'background-image': 'url(' + image.url + ')', 'height': image.height, 'width': image.width }).prop('outerHTML').replace(/&quot;/g, "'")
+      image_set_url = '//static-cdn.jtvnw.net/emoticons/v1/' + emoticon.id;
+      that._emoticons[emoticon.emoticon_set].push({
+        regex: new RegExp('\\b' + emoticon.code + '\\b', 'g'),
+        code: $('<img>').addClass('emoticon').attr({ 'src': image_set_url + '/1.0', 'srcset': image_set_url + '/2.0 2x' }).prop('outerHTML').replace(/&quot;/g, "'")
       });
     });
   });
@@ -289,7 +293,7 @@ ReChat.Playback.prototype._replay = function() {
       this._cacheExhaustionHandled = false;
     }
     this._hideStatusMessage();
-    var atBottom = this._scrolledToBottom();
+    var atBottom = !this._userScrolling;
     while (this._cachedMessages.length) {
       var message = this._cachedMessages[0],
           messageData = message._source,

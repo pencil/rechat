@@ -1,5 +1,7 @@
 var pageMod = require('sdk/page-mod'),
-    data = require('sdk/self').data,
+    self = require('sdk/self'),
+    data = self.data,
+    version = self.version,
     localFiles = {
       'res/sad.png': data.url('sad.png'),
       'res/spinner.gif': data.url('spinner.gif'),
@@ -8,7 +10,10 @@ var pageMod = require('sdk/page-mod'),
 
 pageMod.PageMod({
   include: ['http://www.twitch.tv/*'],
-  contentScriptOptions: localFiles,
+  contentScriptOptions: {
+    paths: localFiles,
+    version: version
+  },
   contentScriptFile: [
     data.url('jquery.min.js'),
     data.url('please.js'),

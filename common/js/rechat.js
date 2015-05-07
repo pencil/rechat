@@ -14,14 +14,25 @@ var ReChat = {
   },
 
   currentBrowser: function() {
-    if(typeof(safari) !== 'undefined') {
+    if (typeof(safari) !== 'undefined') {
       return ReChat.Browser.Safari;
-    } else if(typeof(chrome) !== 'undefined') {
+    } else if (typeof(chrome) !== 'undefined') {
       return ReChat.Browser.Chrome;
-    } else if(typeof(self.on) === 'function') {
+    } else if (typeof(self.on) === 'function') {
       return ReChat.Browser.Firefox;
     } else {
       throw 'ReChat is not compatible with this browser';
+    }
+  },
+
+  getExtensionVersion: function() {
+    switch(ReChat.currentBrowser()) {
+      case ReChat.Browser.Safari:
+        return safari.extension.displayVersion;
+      case ReChat.Browser.Chrome:
+        return chrome.runtime.getManifest().version;
+      case ReChat.Browser.Firefox:
+        return self.options.version;
     }
   },
 
@@ -32,7 +43,7 @@ var ReChat = {
       case ReChat.Browser.Chrome:
         return chrome.extension.getURL(path);
       case ReChat.Browser.Firefox:
-        return self.options[path];
+        return self.options.paths[path];
     }
     return null;
   },
@@ -42,9 +53,9 @@ var ReChat = {
       case ReChat.Browser.Safari:
         var uuid = new Date().getTime() + '',
             handler = function(event) {
-              if(event.name == uuid) {
+              if (event.name == uuid) {
                 safari.self.removeEventListener('message', handler);
-                if(!event.message || event.message.error) {
+                if (!event.message || event.message.error) {
                   failure && failure(event.message);
                 } else {
                   success(event.message);
@@ -61,7 +72,7 @@ var ReChat = {
       case ReChat.Browser.Chrome:
       case ReChat.Browser.Firefox:
         var jqxhr = $.get(path, params, success);
-        if(failure) {
+        if (failure) {
           jqxhr.fail(failure);
         }
         break;
@@ -89,6 +100,22 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'background-color': '#f2f2f2'
   }).addClass('rightcol-content');
 
+  var header = $('<div>').css({
+    'display': 'block',
+    'position': 'relative',
+    'top': '0px',
+    'height': '30px',
+    'padding': '10px 0',
+    'line-height': '30px',
+    'text-align': 'center',
+    'font-size': '14px',
+    'z-index': '5',
+    'width': '100%',
+    'box-shadow': 'inset 0 -1px 0 0 rgba(0,0,0,0.2)'
+  });
+  header.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
+  container.append(header);
+
   var statusMessage = $('<div>').css({
     'position': 'relative',
     'top': '50px',
@@ -104,7 +131,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
   var chatMessages = $('<div>').css({
     'position': 'absolute',
     'right': 0,
-    'top': 0,
+    'top': '50px',
     'bottom': 0,
     'left': 0,
     'width': 'auto',
@@ -202,15 +229,15 @@ ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
       populationId = new Date(),
       that = this;
   if (this._messageStreamEndAt && newestMessageDate >= this._messageStreamEndAt) {
-    console.info('No more messages available, aborting...');
+    console.info('ReChat: No more messages available, aborting...');
     return;
   }
   this._cachePopulationId = populationId;
   var loadingFunction = function() {
-    console.info('Loading messages from the server that got recordet after ' + newestMessageDate);
+    console.info('ReChat: Loading messages from the server that got recordet after ' + newestMessageDate);
     that._loadMessages(newestMessageDate, function(result) {
       if (populationId != that._cachePopulationId) {
-        console.info('Population ID changed, lock expired, aborting...');
+        console.info('ReChat: Population ID changed, lock expired, aborting...');
         return;
       }
       if (!result.hits.total) {
@@ -287,7 +314,7 @@ ReChat.Playback.prototype._replay = function() {
       this._showStatusMessage('Sorry, no chat messages for this VOD available', 'sad.png');
     }
   } else if (!this._cachedMessages || !this._cachedMessages.length) {
-    console.info('Cache is empty, waiting for population...');
+    console.info('ReChat: Cache is empty, waiting...');
   } else {
     if (this._cachedMessages.length >= ReChat.cacheExhaustionLimit) {
       this._cacheExhaustionHandled = false;
@@ -430,7 +457,7 @@ $(document).ready(function() {
             match = videoIdRegex.exec(videoUrl);
         if (match != null) {
           var videoId = match[1];
-          console.info('VOD ' + videoId + ' detected');
+          console.info('ReChat: VOD ' + videoId + ' detected');
           ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
             if (currentUrl != document.location.href) {
               return;

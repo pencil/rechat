@@ -196,10 +196,16 @@ ReChat.Playback.prototype._loadEmoticons = function() {
   });
 };
 
-ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
+ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, connectionErrors) {
   var that = this;
+  if (!connectionErrors) {
+    connectionErrors = 0;
+  }
   ReChat.get(ReChat.searchBaseUrl + this.videoId,
-             { 'after': recievedAfter.toISOString() },
+             {
+               'include_jtv': 'true',
+               'after': recievedAfter.toISOString()
+             },
              callback,
              function(response) {
                if (response && response.status == 404) {
@@ -209,9 +215,9 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback) {
                  // server error, let's try again in 10 seconds
                  setTimeout(function() {
                    if (!that._stopped) {
-                     that._loadMessages(recievedAfter, callback);
+                     that._loadMessages(recievedAfter, callback, connectionErrors + 1);
                    }
-                 }, 10000);
+                 }, 1000 * Math.pow(2, connectionErrors));
                }
              });
 };
@@ -327,7 +333,16 @@ ReChat.Playback.prototype._replay = function() {
           messageDate = new Date(Date.parse(messageData.recieved_at));
       if (messageDate <= currentAbsoluteVideoTime) {
         this._cachedMessages.shift();
-        this._chatMessageContainer.append(this._formatChatMessage(messageData));
+        if (messageData.from == 'twitchnotify') {
+          var formattedMessage = this._formatSystemMessage(messageData);
+        } else if (messageData.from == 'jtv') {
+          var formattedMessage = this._formatJtvMessage(messageData);
+        } else {
+          var formattedMessage = this._formatChatMessage(messageData);
+        }
+        if (formattedMessage != null) {
+          this._chatMessageContainer.append(formattedMessage);
+        }
         if (atBottom) {
           this._scrollToBottom();
         }
@@ -416,8 +431,28 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   return line;
 };
 
+ReChat.Playback.prototype._formatSystemMessage = function(messageData) {
+  var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+      message = $('<span>').css('color', '#666').addClass('message');
+  message.text(messageData.message);
+  line.append(message);
+  return line;
+};
+
+ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
+  var message = messageData.message,
+      parts = message.split(' ', 2);
+  if (parts[0] == 'CLEARCHAT') {
+    message = message.substring(10) + ' has been timed out.';
+  } else if (parts[0] != 'This') {
+    return null;
+  }
+  console.info(message);
+  return this._formatSystemMessage($.extend(messageData, { message: message }));
+};
+
 ReChat.Playback.prototype.start = function() {
-  console.info('ReChat: start');
+  console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._prepareInterface();
   this._loadEmoticons();
   this._replay();

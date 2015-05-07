@@ -17,6 +17,7 @@ pageMod.PageMod({
   contentScriptFile: [
     data.url('jquery.min.js'),
     data.url('please.js'),
+    data.url('autolinker.js'),
     data.url('rechat.js')
   ]
 });

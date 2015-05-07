@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": ["http://www.twitch.tv/*"],
-      "js": ["js/jquery.min.js", "js/please.js", "js/rechat.js"]
+      "js": ["js/jquery.min.js", "js/please.js", "js/autolinker.js", "js/rechat.js"]
     }
   ],
 

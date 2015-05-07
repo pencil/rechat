@@ -29,6 +29,7 @@
 			<array>
 				<string>js/jquery.min.js</string>
 				<string>js/please.js</string>
+				<string>js/autolinker.js</string>
 				<string>js/rechat.js</string>
 			</array>
 		</dict>

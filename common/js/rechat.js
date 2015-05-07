@@ -7,6 +7,14 @@ var ReChat = {
   nicknameColors: Please.make_color({ colors_returned: 50, saturation: 0.7 }),
   defaultStreamDelay: 17,
 
+  autolinker: new Autolinker({
+    urls: true,
+    email: true,
+    twitter: false,
+    phone: false,
+    stripPrefix: false
+  }),
+
   Browser: {
     Safari: 0,
     Chrome: 1,
@@ -426,7 +434,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   from.text(messageData.from);
   colon.text(':');
   message.text(messageData.message);
-  message.html(this._replaceEmoticons(message.html(), messageData.emoteset));
+  message.html(this._replaceEmoticons(ReChat.autolinker.link(message.html()), messageData.emoteset));
   line.append(from).append(colon).append(' ').append(message);
   return line;
 };

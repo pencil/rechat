@@ -18,6 +18,7 @@ pageMod.PageMod({
     data.url('jquery.min.js'),
     data.url('please.js'),
     data.url('autolinker.js'),
+    data.url('rechat.firefox.js'),
     data.url('rechat.js')
   ]
 });

@@ -5,7 +5,7 @@
 	<key>Author</key>
 	<string>Nils Caspar</string>
 	<key>Builder Version</key>
-	<string>10600.3.18</string>
+	<string>10600.6.3</string>
 	<key>CFBundleDisplayName</key>
 	<string>ReChat for Twitch™</string>
 	<key>CFBundleIdentifier</key>
@@ -30,6 +30,7 @@
 				<string>js/jquery.min.js</string>
 				<string>js/please.js</string>
 				<string>js/autolinker.js</string>
+				<string>js/rechat.safari.js</string>
 				<string>js/rechat.js</string>
 			</array>
 		</dict>

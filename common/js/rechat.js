@@ -1,4 +1,4 @@
-var ReChat = {
+this.ReChat = $.extend({
   // Settings:
   searchBaseUrl: 'http://search.rechat.org/videos/',
   cacheExhaustionLimit: 100,
@@ -15,80 +15,14 @@ var ReChat = {
     stripPrefix: false
   }),
 
-  Browser: {
-    Safari: 0,
-    Chrome: 1,
-    Firefox: 2
-  },
-
-  currentBrowser: function() {
-    if (typeof(safari) !== 'undefined') {
-      return ReChat.Browser.Safari;
-    } else if (typeof(chrome) !== 'undefined') {
-      return ReChat.Browser.Chrome;
-    } else if (typeof(self.on) === 'function') {
-      return ReChat.Browser.Firefox;
-    } else {
-      throw 'ReChat is not compatible with this browser';
-    }
-  },
-
-  getExtensionVersion: function() {
-    switch(ReChat.currentBrowser()) {
-      case ReChat.Browser.Safari:
-        return safari.extension.displayVersion;
-      case ReChat.Browser.Chrome:
-        return chrome.runtime.getManifest().version;
-      case ReChat.Browser.Firefox:
-        return self.options.version;
-    }
-  },
-
-  getExtensionResourcePath: function (path) {
-    switch(ReChat.currentBrowser()) {
-      case ReChat.Browser.Safari:
-        return safari.extension.baseURI + path;
-      case ReChat.Browser.Chrome:
-        return chrome.extension.getURL(path);
-      case ReChat.Browser.Firefox:
-        return self.options.paths[path];
-    }
-    return null;
-  },
-
   get: function(path, params, success, failure) {
-    switch(ReChat.currentBrowser()) {
-      case ReChat.Browser.Safari:
-        var uuid = new Date().getTime() + '',
-            handler = function(event) {
-              if (event.name == uuid) {
-                safari.self.removeEventListener('message', handler);
-                if (!event.message || event.message.error) {
-                  failure && failure(event.message);
-                } else {
-                  success(event.message);
-                }
-              }
-            };
-        safari.self.addEventListener('message', handler);
-        safari.self.tab.dispatchMessage(uuid, {
-          type: 'GETRequest',
-          url: path,
-          params: params
-        });
-        break;
-      case ReChat.Browser.Chrome:
-      case ReChat.Browser.Firefox:
-        var jqxhr = $.get(path, params, success);
-        if (failure) {
-          jqxhr.fail(failure);
-        }
-        break;
+    var jqxhr = $.get(path, params, success);
+    if (failure) {
+      jqxhr.fail(failure);
     }
     return null;
-  },
-
-};
+  }
+}, this.ReChat || {});
 
 ReChat.Playback = function(videoId, recordedAt) {
   this.videoId = videoId;
@@ -487,6 +421,7 @@ $(document).ready(function() {
   if (window.top !== window) {
     return;
   }
+
   var lastUrl = false,
       currentPlayback = false;
   // TODO: find a better solution for this...

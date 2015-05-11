@@ -13,3 +13,7 @@ do
   ln -f $file ./Firefox/data/
   ln -f $file ./Safari.safariextension/res/
 done
+
+ln -f common/js/adapters/rechat.chrome.js ./Chrome/js/
+ln -f common/js/adapters/rechat.firefox.js ./Firefox/data/
+ln -f common/js/adapters/rechat.safari.js ./Safari.safariextension/js/

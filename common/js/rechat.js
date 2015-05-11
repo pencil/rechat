@@ -358,16 +358,23 @@ ReChat.Playback.prototype._replaceEmoticons = function(text, emoticon_set) {
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
-  var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+  var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
+      line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
       from = $('<span>').addClass('from').css({
-        'color': this._colorForNickname(messageData.from, messageData.usercolor),
+        'color': userColor,
         'font-weight': 'bold'
       }),
       colon = $('<span>').addClass('colon'),
-      message = $('<span>').addClass('message');
+      message = $('<span>').addClass('message'),
+      messageText = messageData.message;
+  if (messageText.substring(0, 8) == "ACTION ") {
+    message.css({ 'color': userColor });
+    messageText = messageText.substring(8);
+  } else {
+    colon.text(':');
+  }
   from.text(messageData.from);
-  colon.text(':');
-  message.text(messageData.message);
+  message.text(messageText);
   message.html(this._replaceEmoticons(ReChat.autolinker.link(message.html()), messageData.emoteset));
   line.append(from).append(colon).append(' ').append(message);
   return line;
@@ -385,11 +392,10 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
   var message = messageData.message,
       parts = message.split(' ', 2);
   if (parts[0] == 'CLEARCHAT') {
-    message = message.substring(10) + ' has been timed out.';
+    message = parts[1] + ' has been timed out.';
   } else if (parts[0] != 'This') {
     return null;
   }
-  console.info(message);
   return this._formatSystemMessage($.extend(messageData, { message: message }));
 };
 

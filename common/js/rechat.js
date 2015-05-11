@@ -325,7 +325,7 @@ ReChat.Playback.prototype._replay = function() {
     this._autoPopulateCache(true);
   } else if (currentAbsoluteVideoTime >= this._messageStreamEndAt) {
     if (this._chatMessageContainer.is(':empty')) {
-      this._showStatusMessage('Sorry, no chat messages for this VOD available', 'sad.png');
+      this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.', 'sad.png');
     }
   } else if (!this._cachedMessages || !this._cachedMessages.length) {
     console.info('ReChat: Cache is empty, waiting...');
@@ -356,7 +356,7 @@ ReChat.Playback.prototype._replay = function() {
         }
       } else {
         if (this._chatMessageContainer.is(':empty')) {
-          var secondsToFirstMessage = Math.floor(messageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
+          var secondsToFirstMessage = Math.ceil(messageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
           if (secondsToFirstMessage > 0) {
             var minutesToFirstMessage = Math.floor(secondsToFirstMessage / 60);
             secondsToFirstMessage -= minutesToFirstMessage * 60;

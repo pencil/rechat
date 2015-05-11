@@ -367,7 +367,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
       colon = $('<span>').addClass('colon'),
       message = $('<span>').addClass('message'),
       messageText = messageData.message;
-  if (messageText.substring(0, 8) == "ACTION ") {
+  if (messageText.substring(0, 8) == "\x01ACTION ") {
     message.css({ 'color': userColor });
     messageText = messageText.substring(8);
   } else {

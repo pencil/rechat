@@ -39,8 +39,9 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'bottom': 0,
     'width': '339px',
     'z-index': 4,
-    'background-color': '#f2f2f2'
-  }).addClass('rightcol-content');
+    'background-color': '#f2f2f2',
+    'margin': 0
+  }).addClass('rightcol-content').addClass('ember-chat');
 
   var header = $('<div>').css({
     'display': 'block',
@@ -55,6 +56,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'width': '100%',
     'box-shadow': 'inset 0 -1px 0 0 rgba(0,0,0,0.2)'
   });
+  header.addClass('chat-header');
   header.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
   container.append(header);
 
@@ -65,7 +67,8 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'background-repeat': 'no-repeat',
     'background-position': 'center top',
     'background-size': '40px 40px',
-    'padding': '60px 20px'
+    'padding': '60px 20px',
+    'z-index': 100
   });
   container.append(statusMessage);
   this._statusMessageContainer = statusMessage;
@@ -81,6 +84,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'overflow-x': 'hidden',
     'overflow-y': 'auto'
   });
+  chatMessages.addClass('chat-messages');
   container.append(chatMessages);
   this._chatMessageContainer = chatMessages;
   chatMessages.on('scroll', function() {
@@ -365,7 +369,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
         'font-weight': 'bold'
       }),
       colon = $('<span>').addClass('colon'),
-      message = $('<span>').addClass('message'),
+      message = $('<span>').addClass('message').css({ 'word-wrap': 'break-word' }),
       messageText = messageData.message;
   if (messageText.substring(0, 8) == "\x01ACTION ") {
     message.css({ 'color': userColor });

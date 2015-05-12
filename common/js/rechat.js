@@ -279,6 +279,7 @@ ReChat.Playback.prototype._replay = function() {
           messageDate = new Date(Date.parse(messageData.recieved_at));
       if (messageDate <= currentAbsoluteVideoTime) {
         this._cachedMessages.shift();
+        delete this._timeouts[messageData.from];
         if (messageData.from == 'twitchnotify') {
           var formattedMessage = this._formatSystemMessage(messageData);
         } else if (messageData.from == 'jtv') {
@@ -363,7 +364,7 @@ ReChat.Playback.prototype._replaceEmoticons = function(text, emoticon_set) {
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
-      line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+      line = $('<div>').css('padding', '4px').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
       from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'
@@ -384,9 +385,12 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   return line;
 };
 
-ReChat.Playback.prototype._formatSystemMessage = function(messageData) {
+ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
   var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
       message = $('<span>').css('color', '#666').addClass('message');
+  if (classification) {
+    line.addClass(classification);
+  }
   message.text(messageData.message);
   line.append(message);
   return line;
@@ -394,17 +398,33 @@ ReChat.Playback.prototype._formatSystemMessage = function(messageData) {
 
 ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
   var message = messageData.message,
-      parts = message.split(' ', 2);
-  if (parts[0] == 'CLEARCHAT') {
-    message = parts[1] + ' has been timed out.';
-  } else if (parts[0] != 'This') {
+      classification = null;
+  if (message.substring(0, 9) == 'CLEARCHAT') {
+    var user = message.substring(10);
+    classification = 'rechat-timeout-' + user;
+    message = user + ' has been timed out.';
+    if (this._timeouts[user]) {
+      var existing = $('div.rechat-chat-line.' + classification).last();
+      if (existing.length) {
+        var counter = existing.data('rechat-timeout-counter') || 1;
+        counter += 1;
+        message += ' (' + counter + ' times)';
+        existing.find('.message').text(message);
+        existing.data('rechat-timeout-counter', counter);
+        return null;
+      }
+    }
+    $('div.rechat-chat-line.rechat-user-' + user + ' .message').css({ 'color': '#999' });
+    this._timeouts[user] = true;
+  } else if (message.substring(0, 9) != 'This room') {
     return null;
   }
-  return this._formatSystemMessage($.extend(messageData, { message: message }));
+  return this._formatSystemMessage($.extend(messageData, { message: message }), classification);
 };
 
 ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
+  this._timeouts = {};
   this._prepareInterface();
   this._loadEmoticons();
   this._replay();

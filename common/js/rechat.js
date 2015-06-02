@@ -465,6 +465,7 @@ $(document).ready(function() {
             match = videoIdRegex.exec(videoUrl);
         if (match != null) {
           var videoId = match[1];
+          lastUrl = currentUrl;
           console.info('ReChat: VOD ' + videoId + ' detected');
           ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
             if (currentUrl != document.location.href) {
@@ -481,7 +482,6 @@ $(document).ready(function() {
           document.documentElement.appendChild(script);
         }
       }
-      lastUrl = currentUrl;
     } else if(lastUrl != currentUrl) {
       if (currentPlayback) {
         currentPlayback.stop();

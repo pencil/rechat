@@ -120,28 +120,6 @@ ReChat.Playback.prototype._prepareInterface = function() {
   this._observer.observe(rightCol[0], { subtree: false, attributes: true, attributeOldValue: true });
 };
 
-ReChat.Playback.prototype._loadEmoticons = function() {
-  var that = this;
-  this._emoticons = {};
-  ReChat.get('https://api.twitch.tv/kraken/chat/emoticon_images', {}, function(result) {
-    if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
-      try {
-        result = JSON.parse(result);
-      } catch(e) {}
-    }
-    $.each(result.emoticons, function(i, emoticon) {
-      if (!that._emoticons[emoticon.emoticon_set]) {
-        that._emoticons[emoticon.emoticon_set] = [];
-      }
-      image_set_url = '//static-cdn.jtvnw.net/emoticons/v1/' + emoticon.id;
-      that._emoticons[emoticon.emoticon_set].push({
-        regex: new RegExp('\\b' + emoticon.code + '\\b', 'g'),
-        code: "<img class='emoticon' src='" + image_set_url + "/1.0' srcset='" + image_set_url + "/2.0 2x' />"
-      });
-    });
-  });
-};
-
 ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, connectionErrors) {
   var that = this;
   if (!connectionErrors) {
@@ -347,17 +325,42 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticons = function(text, emoticon_set) {
+ReChat.Playback.prototype._replaceEmoticons = function(text, emotes) {
   var that = this;
-  if (!emoticon_set) {
-    emoticon_set = [];
+  if (!emotes) {
+    return;
   }
-  $.each(emoticon_set.concat([null]), function(i, emoticon_set_id) {
-    if (that._emoticons[emoticon_set_id]) {
-      $.each(that._emoticons[emoticon_set_id], function(j, emoticon) {
-        text = text.replace(emoticon.regex, emoticon.code);
-      });
-    }
+  var emotesToReplace = [],
+      emotes = emotes.split('/');
+  $.each(emotes, function(i, emoteDataRaw) {
+    var emoteData = emoteDataRaw.split(':'),
+        emoteId = emoteData[0],
+        emoteRanges = emoteData[1].split(',');
+    $.each(emoteRanges, function(j, emoteRange) {
+      var emoteRangeParts = emoteRange.split('-'),
+          emoteRangeBegin = parseInt(emoteRangeParts[0]),
+          emoteRangeEnd = parseInt(emoteRangeParts[1]);
+      emotesToReplace.push({ id: emoteId, begin: emoteRangeBegin, end: emoteRangeEnd });
+    });
+  });
+  emotesToReplace.sort(function(x, y) {
+    return x.begin - y.begin;
+  });
+  var offset = 0;
+  $.each(emotesToReplace, function(i, emote) {
+    var emoteBegin = emote.begin + offset,
+        emoteEnd = emote.end + offset,
+        emoteText = text.substring(emoteBegin, emoteEnd + 1),
+        imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id,
+        image = $('<img>').attr({
+          src: imageBaseUrl + '/1.0',
+          srcset: imageBaseUrl + '/2.0 2x',
+          alt: emoteText,
+          title: emoteText
+        }),
+        imageHtml = image[0].outerHTML;
+    text = text.substring(0, Math.max(emoteBegin, 0)) + imageHtml + text.substring(emoteEnd + 1);
+    offset += (imageHtml.length - emoteText.length);
   });
   return text;
 };
@@ -380,7 +383,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   }
   from.text(messageData.from);
   message.text(messageText);
-  message.html(this._replaceEmoticons(ReChat.autolinker.link(message.html()), messageData.emoteset));
+  message.html(this._replaceEmoticons(ReChat.autolinker.link(message.html()), messageData.emotes));
   line.append(from).append(colon).append(' ').append(message);
   return line;
 };
@@ -426,7 +429,6 @@ ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
   this._prepareInterface();
-  this._loadEmoticons();
   this._replay();
 };
 
@@ -439,7 +441,6 @@ ReChat.Playback.prototype.stop = function() {
     this._container.empty();
     this._container.remove();
   }
-  this._emoticons = {};
   this._cachedMessages = [];
 
   if (this._observer) {

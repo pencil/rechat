@@ -120,6 +120,28 @@ ReChat.Playback.prototype._prepareInterface = function() {
   this._observer.observe(rightCol[0], { subtree: false, attributes: true, attributeOldValue: true });
 };
 
+ReChat.Playback.prototype._loadEmoticons = function() {
+  var that = this;
+  this._emoticons = {};
+  ReChat.get('https://api.twitch.tv/kraken/chat/emoticon_images', {}, function(result) {
+    if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
+      try {
+        result = JSON.parse(result);
+      } catch(e) {}
+    }
+    $.each(result.emoticons, function(i, emoticon) {
+      if (!that._emoticons[emoticon.emoticon_set]) {
+        that._emoticons[emoticon.emoticon_set] = [];
+      }
+      image_set_url = '//static-cdn.jtvnw.net/emoticons/v1/' + emoticon.id;
+      that._emoticons[emoticon.emoticon_set].push({
+        regex: new RegExp('\\b' + emoticon.code + '\\b', 'g'),
+        code: "<img class='emoticon' src='" + image_set_url + "/1.0' srcset='" + image_set_url + "/2.0 2x' />"
+      });
+    });
+  });
+};
+
 ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, connectionErrors) {
   var that = this;
   if (!connectionErrors) {
@@ -325,8 +347,22 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticons = function(text, emotes) {
+ReChat.Playback.prototype._replaceEmoticonsByEmotesets = function(text, emoticon_set) {
   var that = this;
+  if (!emoticon_set) {
+    emoticon_set = [];
+  }
+  $.each(emoticon_set.concat([null]), function(i, emoticon_set_id) {
+    if (that._emoticons[emoticon_set_id]) {
+      $.each(that._emoticons[emoticon_set_id], function(j, emoticon) {
+        text = text.replace(emoticon.regex, emoticon.code);
+      });
+    }
+  });
+  return text;
+};
+
+ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
   if (!emotes) {
     return;
   }
@@ -383,7 +419,12 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   }
   from.text(messageData.from);
   message.text(messageText);
-  message.html(this._replaceEmoticons(ReChat.autolinker.link(message.html()), messageData.emotes));
+  var messageHtml = ReChat.autolinker.link(message.html());
+  if (messageData.emotes) {
+    message.html(this._replaceEmoticonsByRanges(messageHtml, messageData.emotes));
+  } else {
+    message.html(this._replaceEmoticonsByEmotesets(messageHtml, messageData.emoteset));
+  }
   line.append(from).append(colon).append(' ').append(message);
   return line;
 };
@@ -429,6 +470,7 @@ ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
   this._prepareInterface();
+  this._loadEmoticons();
   this._replay();
 };
 
@@ -441,6 +483,7 @@ ReChat.Playback.prototype.stop = function() {
     this._container.empty();
     this._container.remove();
   }
+  this._emoticons = {};
   this._cachedMessages = [];
 
   if (this._observer) {

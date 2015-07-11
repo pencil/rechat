@@ -84,12 +84,23 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'overflow-x': 'hidden',
     'overflow-y': 'auto'
   });
+  this._staydown = new StayDown({
+    target: chatMessages.get(0),
+    interval: 100,
+    callback: function(event) {
+      switch (event) {
+        case 'release':
+          this._userScrolling = true;
+          break;
+        case 'lock':
+          this._userScrolling = false;
+          break;
+      }
+    }
+  });
   chatMessages.addClass('chat-messages');
   container.append(chatMessages);
   this._chatMessageContainer = chatMessages;
-  chatMessages.on('scroll', function() {
-    that._userScrolling = !that._scrolledToBottom();
-  });
 
   this._container = container;
   $('body').append(container);
@@ -237,14 +248,6 @@ ReChat.Playback.prototype._hideStatusMessage = function() {
   this._statusMessageContainer.hide();
 };
 
-ReChat.Playback.prototype._scrolledToBottom = function() {
-  return Math.abs(this._chatMessageContainer[0].scrollHeight - this._chatMessageContainer.scrollTop() - this._chatMessageContainer.outerHeight()) <= 30;
-};
-
-ReChat.Playback.prototype._scrollToBottom = function() {
-  this._chatMessageContainer.scrollTop(this._chatMessageContainer[0].scrollHeight);
-};
-
 ReChat.Playback.prototype._replay = function() {
   var currentVideoTime = this._currentVideoTime(),
       currentAbsoluteVideoTime = this._currentAbsoluteVideoTime(),
@@ -272,7 +275,6 @@ ReChat.Playback.prototype._replay = function() {
       this._cacheExhaustionHandled = false;
     }
     this._hideStatusMessage();
-    var atBottom = !this._userScrolling;
     while (this._cachedMessages.length) {
       var message = this._cachedMessages[0],
           messageData = message._source,
@@ -290,9 +292,6 @@ ReChat.Playback.prototype._replay = function() {
         if (formattedMessage != null) {
           this._chatMessageContainer.append(formattedMessage);
         }
-        if (atBottom) {
-          this._scrollToBottom();
-        }
       } else {
         if (this._chatMessageContainer.is(':empty')) {
           var secondsToFirstMessage = Math.ceil(messageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
@@ -307,7 +306,7 @@ ReChat.Playback.prototype._replay = function() {
       }
     }
 
-    if (atBottom) {
+    if (!this._userScrolling) {
       var numberOfChatMessagesDisplayed = this._chatMessageContainer.find('.rechat-chat-line').length;
       if (numberOfChatMessagesDisplayed >= ReChat.chatDisplayLimit) {
         this._chatMessageContainer.find('.rechat-chat-line:lt(' + Math.max(numberOfChatMessagesDisplayed - ReChat.chatDisplayLimit, 10) + ')').remove();
@@ -489,6 +488,10 @@ ReChat.Playback.prototype.stop = function() {
   if (this._observer) {
     this._observer.disconnect();
   }
+
+  if (this._staydown) {
+    this._staydown.interval = 10000000; // only what to "stop" it
+  }
 };
 
 $(document).ready(function() {
@@ -503,8 +506,7 @@ $(document).ready(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
       if ($('div.archive_info_title').length && $('div#player object').length) {
-        var videoIdRegex = /\/([a-z])\/([0-9]+)/;
-        match = videoIdRegex.exec(currentUrl);
+        var match = /\/([a-z])\/([0-9]+)/.exec(currentUrl);
         if (match != null) {
           var videoId = match[1] + match[2];
           lastUrl = currentUrl;

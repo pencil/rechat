@@ -502,11 +502,11 @@ $(document).ready(function() {
   setInterval(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
-      if ($('div.archive_info_title').length && $('div#player object').length) {
-        var videoIdRegex = /\/([a-z])\/([0-9]+)/;
-        match = videoIdRegex.exec(currentUrl);
+      var flashVars = $('param[name="flashvars"]');
+      if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
+        var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {
-          var videoId = match[1] + match[2];
+          var videoId = match[1];
           lastUrl = currentUrl;
           console.info('ReChat: VOD ' + videoId + ' detected');
           ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {

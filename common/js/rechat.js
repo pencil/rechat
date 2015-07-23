@@ -90,10 +90,10 @@ ReChat.Playback.prototype._prepareInterface = function() {
     callback: function(event) {
       switch (event) {
         case 'release':
-          this._userScrolling = true;
+          that._userScrolling = true;
           break;
         case 'lock':
-          this._userScrolling = false;
+          that._userScrolling = false;
           break;
       }
     }

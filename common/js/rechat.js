@@ -33,10 +33,10 @@ ReChat.Playback = function(videoId, recordedAt) {
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
 
-  var container_tab = $('#right_col .rightcol-content .tab-container').not(".hidden").first();
-  var container_chat = $('<div>').addClass('chat-container js-chat-container');
+  var containerTab = $('#right_col .rightcol-content .tab-container').not(".hidden").first();
+  var containerChat = $('<div>').addClass('chat-container js-chat-container');
 
-  var container_ember = $('<div>').css({
+  var containerEmber = $('<div>').css({
     'z-index': 4,
     'background-color': '#f2f2f2',
     'margin': 0
@@ -57,7 +57,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
   });
   header.addClass('chat-header');
   header.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
-  container_ember.append(header);
+  containerEmber.append(header);
 
   var statusMessage = $('<div>').css({
     'position': 'relative',
@@ -69,7 +69,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'padding': '60px 20px',
     'z-index': 100
   });
-  container_ember.append(statusMessage);
+  containerEmber.append(statusMessage);
   this._statusMessageContainer = statusMessage;
 
   var chatMessages = $('<div>').css({
@@ -101,15 +101,15 @@ ReChat.Playback.prototype._prepareInterface = function() {
   chatMessages.addClass('ember-chat');
   chatMessages.addClass('chat-messages');
   chatMessages.addClass('chat-lines');
-  container_ember.append(chatMessages);
-  this._chatMessageContainer = chatMessages;
+  containerEmber.append(chatMessages);
 
-  // Set the core message container
-  this._container = container_ember;
+  // Set the core containers
+  this._chatMessageContainer = chatMessages;
+  this._container = containerEmber;
 
   // Append the ember to the chat and right panel container
-  container_chat.append(container_ember);
-  container_tab.append(container_chat);
+  containerChat.append(containerEmber);
+  containerTab.append(containerChat);
 
 };
 

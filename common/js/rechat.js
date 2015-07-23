@@ -179,7 +179,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
   }
   this._cachePopulationId = populationId;
   var loadingFunction = function() {
-    console.info('ReChat: Loading messages from the server that got recordet after ' + newestMessageDate);
+    console.info('ReChat: Loading messages from the server that got recorded after ' + newestMessageDate);
     that._loadMessages(newestMessageDate, function(result) {
       if (populationId != that._cachePopulationId) {
         console.info('ReChat: Population ID changed, lock expired, aborting...');

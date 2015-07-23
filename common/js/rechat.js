@@ -384,7 +384,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
-      line = $('<div>').css('padding', '4px').addClass('chat-line').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
+      line = $('<div>').addClass('chat-line').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
       from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'

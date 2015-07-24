@@ -27,6 +27,11 @@ $(document).keyup(function (e) {
 
 // Do our application specific key handles
 function handleKeyPresses() {
+  // Check that we have the twitch ember app
+  // Check that we are on the vod page route
+  if(!window.Ember || !window.App || App.__container__.lookup("controller:application").get("currentRouteName") !== "vod") {
+    return;
+  }
   // esc to exit theatre mode
   // Note twitch handles the player exit
   if (keys[27]) {

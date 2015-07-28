@@ -325,9 +325,12 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
 };
 
 ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
-  var escapeHelper = $('<div>');
+  var escapeHelper = $('<div>'),
+      escapeAndLink = function(text) {
+        return ReChat.autolinker.link(escapeHelper.text(text).html());
+      };
   if (!emotes) {
-    return ReChat.autolinker.link(escapeHelper.text(text).html());
+    return escapeAndLink(text);
   }
   var emotesToReplace = [],
       emotes = emotes.split('/');
@@ -357,11 +360,11 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
           title: emoteText
         }),
         imageHtml = image[0].outerHTML;
-    messageHtml += ReChat.autolinker.link(escapeHelper.text(text.substring(offset, emote.begin)).html());
+    messageHtml += escapeAndLink(text.substring(offset, emote.begin));
     messageHtml += imageHtml;
     offset = emote.end + 1;
   });
-  messageHtml += ReChat.autolinker.link(escapeHelper.text(text.substring(offset)).html());
+  messageHtml += escapeAndLink(text.substring(offset));
   return messageHtml;
 };
 

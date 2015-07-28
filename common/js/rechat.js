@@ -383,9 +383,13 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
-  var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
-      line = $('<div>').addClass('chat-line').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
-      from = $('<span>').addClass('from').css({
+  var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
+  var line = $('<div>').addClass('chat-line').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from);
+  // Add data attributes
+  line.attr('data-sender', messageData.from);
+  line.attr('data-room', messageData.to.substring(1));
+  // From line
+  var from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'
       }),

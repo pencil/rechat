@@ -361,7 +361,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
     messageHtml += imageHtml;
     offset = emote.end + 1;
   });
-  messageHtml += escapeHelper.text(text.substring(offset)).html();
+  messageHtml += ReChat.autolinker.link(escapeHelper.text(text.substring(offset)).html());
   return messageHtml;
 };
 

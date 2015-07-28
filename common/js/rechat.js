@@ -415,7 +415,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
-  var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+  var line = $('<div>').addClass('chat-line').addClass('rechat-chat-line'),
       message = $('<span>').css('color', '#666').addClass('message');
   if (classification) {
     line.addClass(classification);

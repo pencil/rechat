@@ -505,27 +505,33 @@ $(document).ready(function() {
   setInterval(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
-      var flashVars = $('param[name="flashvars"]');
-      if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
+      var flashVars = $('param[name="flashvars"]'),
+          html5Player = $('div.player.player-isvod'),
+          videoId = false;
+      if (html5Player.length) {
+        videoId = html5Player.attr('data-video');
+      } else if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
         var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {
           var videoId = match[1];
-          lastUrl = currentUrl;
-          console.info('ReChat: VOD ' + videoId + ' detected');
-          ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
-            if (currentUrl != document.location.href) {
-              return;
-            }
-            var recordedAt = new Date(Date.parse(result.recorded_at));
-            currentPlayback = new ReChat.Playback(videoId, recordedAt);
-            currentPlayback.start();
-          });
-
-          // Inject script to extract video time
-          var script = document.createElement('script');
-          script.src = ReChat.getExtensionResourcePath('js/injected.js');
-          document.documentElement.appendChild(script);
         }
+      }
+      if (videoId) {
+        lastUrl = currentUrl;
+        console.info('ReChat: VOD ' + videoId + ' detected');
+        ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
+          if (currentUrl != document.location.href) {
+            return;
+          }
+          var recordedAt = new Date(Date.parse(result.recorded_at));
+          currentPlayback = new ReChat.Playback(videoId, recordedAt);
+          currentPlayback.start();
+        });
+
+        // Inject script to extract video time
+        var script = document.createElement('script');
+        script.src = ReChat.getExtensionResourcePath('js/injected.js');
+        document.documentElement.appendChild(script);
       }
     } else if(lastUrl != currentUrl) {
       if (currentPlayback) {

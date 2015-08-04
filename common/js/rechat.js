@@ -513,7 +513,7 @@ $(document).ready(function() {
       } else if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
         var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {
-          var videoId = match[1];
+          videoId = match[1];
         }
       }
       if (videoId) {

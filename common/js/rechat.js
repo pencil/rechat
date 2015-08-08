@@ -384,7 +384,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   } else {
     colon.text(':');
   }
-  from.text(messageData.from);
+  from.text(messageData.from.replace('\\s', ' '));
   var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
   message.html(messageHtml);
   line.append(from).append(colon).append(' ').append(message);

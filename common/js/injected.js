@@ -18,7 +18,7 @@ $(document).keydown(function (e) {
   var key = String.fromCharCode(event.which).toLowerCase();
   // alt+t to toggle theatre mode
   // Note that twitch already handles the player toggle call
-  if ((e.altKey || e.metaKey) && key == 't') {
+  if (e.altKey && key == 't') {
     $('#player').toggleClass('dynamic-player');
   }
   // esc to exit theatre mode

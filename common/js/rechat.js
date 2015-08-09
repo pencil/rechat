@@ -174,7 +174,7 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, conn
 };
 
 ReChat.Playback.prototype._currentVideoTime = function() {
-  return (parseInt($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
+  return (parseFloat($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
 };
 
 ReChat.Playback.prototype._currentAbsoluteVideoTime = function() {

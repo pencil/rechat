@@ -5,7 +5,7 @@
   "description": "Adds chat messages from the past to your favorite Twitch VODs",
   "author": "Nils Caspar",
   "license": "MIT",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "homepage": "https://www.rechat.org/",
 
   "permissions": {

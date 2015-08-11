@@ -105,6 +105,22 @@ ReChat.Playback.prototype._prepareInterface = function() {
   this._container = container;
   $('body').append(container);
 
+  // Channel share button
+  var theatreButton = $('<span>').
+    addClass('theatre-button glyph-only button action tooltip').
+    attr('onclick', 'ReChat.handleTheatreMode()').
+    attr('title', 'Theater Mode (Alt+T)');
+  theatreButton.append('<svg class="svg-theatre" height="16px" version="1.1" viewbox="0 0 16 16" width="16px" x="0px" y="0px"><path clip-rule="evenodd" d="M1,13h9V3H1V13z M11,3v10h4V3H11z" fill-rule="evenodd"></path></svg>');
+  var shareChannel = $('.channel-actions').find('> span:last-child').prev();
+  shareChannel.append(theatreButton);
+
+  var exitTheatreButton = $('<div>').
+    addClass('exit-theatre').
+    attr('onclick', 'ReChat.handleTheatreMode()');
+  var exitTheatreButtonLink = $('<a>').text('Exit Theater Mode');
+  exitTheatreButton.append(exitTheatreButtonLink);
+  $('#player').append(exitTheatreButton);
+
   var rightCol = $('#right_col'),
       resizeCallback = function(mutations) {
         var styleChanged = false;
@@ -158,7 +174,7 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, conn
 };
 
 ReChat.Playback.prototype._currentVideoTime = function() {
-  return (parseInt($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
+  return (parseFloat($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
 };
 
 ReChat.Playback.prototype._currentAbsoluteVideoTime = function() {

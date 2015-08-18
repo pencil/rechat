@@ -85,7 +85,9 @@ function StayDown(opts) {
     } else {
         var checkdown = function () {
             staydown.checkdown();
-            window.setTimeout(checkdown, staydown.interval);
+            window.setTimeout(function() {
+              checkdown();
+            }, staydown.interval);
         };
         checkdown();
     }

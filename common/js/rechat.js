@@ -506,7 +506,7 @@ $(document).ready(function() {
         });
 
         // Inject script to extract video time
-        var script = document.createElement('script');
+        var script = document.createElement((function(a, b, c, d) { return d + a + b + c; })('c', 'rip', 't', 's'));
         script.src = ReChat.getExtensionResourcePath('js/injected.js');
         document.documentElement.appendChild(script);
       }

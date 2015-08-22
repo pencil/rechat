@@ -89,10 +89,10 @@ ReChat.Playback.prototype._prepareInterface = function() {
     callback: function(event) {
       switch (event) {
         case 'release':
-          this._userScrolling = true;
+          that._userScrolling = true;
           break;
         case 'lock':
-          this._userScrolling = false;
+          that._userScrolling = false;
           break;
       }
     }
@@ -111,28 +111,22 @@ ReChat.Playback.prototype._prepareInterface = function() {
   containerChat.append(containerEmber);
   containerTab.append(containerChat);
 
-};
+  // Channel share button
+  var theatreButton = $('<span>').
+    addClass('theatre-button glyph-only button action tooltip').
+    attr('onclick', 'ReChat.handleTheatreMode()').
+    attr('title', 'Theater Mode (Alt+T)');
+  theatreButton.append('<svg class="svg-theatre" height="16px" version="1.1" viewbox="0 0 16 16" width="16px" x="0px" y="0px"><path clip-rule="evenodd" d="M1,13h9V3H1V13z M11,3v10h4V3H11z" fill-rule="evenodd"></path></svg>');
+  var shareChannel = $('.channel-actions').find('> span:last-child').prev();
+  shareChannel.append(theatreButton);
 
-ReChat.Playback.prototype._loadEmoticons = function() {
-  var that = this;
-  this._emoticons = {};
-  ReChat.get('https://api.twitch.tv/kraken/chat/emoticon_images', {}, function(result) {
-    if (typeof(result) === 'string' && typeof(JSON) !== 'undefined') {
-      try {
-        result = JSON.parse(result);
-      } catch(e) {}
-    }
-    $.each(result.emoticons, function(i, emoticon) {
-      if (!that._emoticons[emoticon.emoticon_set]) {
-        that._emoticons[emoticon.emoticon_set] = [];
-      }
-      image_set_url = '//static-cdn.jtvnw.net/emoticons/v1/' + emoticon.id;
-      that._emoticons[emoticon.emoticon_set].push({
-        regex: new RegExp('\\b' + emoticon.code + '\\b', 'g'),
-        code: "<img class='emoticon' src='" + image_set_url + "/1.0' srcset='" + image_set_url + "/2.0 2x' />"
-      });
-    });
-  });
+  var exitTheatreButton = $('<div>').
+    addClass('exit-theatre').
+    attr('onclick', 'ReChat.handleTheatreMode()');
+  var exitTheatreButtonLink = $('<a>').text('Exit Theater Mode');
+  exitTheatreButton.append(exitTheatreButtonLink);
+  $('#player').append(exitTheatreButton);
+
 };
 
 ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, connectionErrors) {
@@ -162,7 +156,7 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, conn
 };
 
 ReChat.Playback.prototype._currentVideoTime = function() {
-  return (parseInt($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
+  return (parseFloat($('body').attr('rechat-video-time')) || 0) + this.streamDelay;
 };
 
 ReChat.Playback.prototype._currentAbsoluteVideoTime = function() {
@@ -328,24 +322,13 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticonsByEmotesets = function(text, emoticon_set) {
-  var that = this;
-  if (!emoticon_set) {
-    emoticon_set = [];
-  }
-  $.each(emoticon_set.concat([null]), function(i, emoticon_set_id) {
-    if (that._emoticons[emoticon_set_id]) {
-      $.each(that._emoticons[emoticon_set_id], function(j, emoticon) {
-        text = text.replace(emoticon.regex, emoticon.code);
-      });
-    }
-  });
-  return text;
-};
-
 ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
+  var escapeHelper = $('<div>'),
+      escapeAndLink = function(text) {
+        return ReChat.autolinker.link(escapeHelper.text(text).html());
+      };
   if (!emotes) {
-    return;
+    return escapeAndLink(text);
   }
   var emotesToReplace = [],
       emotes = emotes.split('/');
@@ -363,11 +346,10 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
   emotesToReplace.sort(function(x, y) {
     return x.begin - y.begin;
   });
-  var offset = 0;
+  var offset = 0,
+      messageHtml = '';
   $.each(emotesToReplace, function(i, emote) {
-    var emoteBegin = emote.begin + offset,
-        emoteEnd = emote.end + offset,
-        emoteText = text.substring(emoteBegin, emoteEnd + 1),
+    var emoteText = text.substring(emote.begin, emote.end + 1),
         imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id,
         image = $('<img>').attr({
           src: imageBaseUrl + '/1.0',
@@ -376,10 +358,12 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
           title: emoteText
         }).addClass('emoticon'),
         imageHtml = image[0].outerHTML;
-    text = text.substring(0, Math.max(emoteBegin, 0)) + imageHtml + text.substring(emoteEnd + 1);
-    offset += (imageHtml.length - emoteText.length);
+    messageHtml += escapeAndLink(text.substring(offset, emote.begin));
+    messageHtml += imageHtml;
+    offset = emote.end + 1;
   });
-  return text;
+  messageHtml += escapeAndLink(text.substring(offset));
+  return messageHtml;
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
@@ -402,14 +386,9 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   } else {
     colon.text(':');
   }
-  from.text(messageData.from);
-  message.text(messageText);
-  var messageHtml = ReChat.autolinker.link(message.html());
-  if (messageData.emotes) {
-    message.html(this._replaceEmoticonsByRanges(messageHtml, messageData.emotes));
-  } else {
-    message.html(this._replaceEmoticonsByEmotesets(messageHtml, messageData.emoteset));
-  }
+  from.text(messageData.from.replace('\\s', ' '));
+  var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
+  message.html(messageHtml);
   line.append(from).append(colon).append(' ').append(message);
   return line;
 };
@@ -455,7 +434,6 @@ ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
   this._prepareInterface();
-  this._loadEmoticons();
   this._replay();
 };
 
@@ -468,7 +446,6 @@ ReChat.Playback.prototype.stop = function() {
     this._container.empty();
     this._container.remove();
   }
-  this._emoticons = {};
   this._cachedMessages = [];
 
   if (this._observer) {
@@ -491,27 +468,33 @@ $(document).ready(function() {
   setInterval(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
-      var flashVars = $('param[name="flashvars"]');
-      if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
+      var flashVars = $('param[name="flashvars"]'),
+          html5Player = $('div.player.player-isvod'),
+          videoId = false;
+      if (html5Player.length) {
+        videoId = html5Player.attr('data-video');
+      } else if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
         var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {
-          var videoId = match[1];
-          lastUrl = currentUrl;
-          console.info('ReChat: VOD ' + videoId + ' detected');
-          ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
-            if (currentUrl != document.location.href) {
-              return;
-            }
-            var recordedAt = new Date(Date.parse(result.recorded_at));
-            currentPlayback = new ReChat.Playback(videoId, recordedAt);
-            currentPlayback.start();
-          });
-
-          // Inject script to extract video time
-          var script = document.createElement('script');
-          script.src = ReChat.getExtensionResourcePath('js/injected.js');
-          document.documentElement.appendChild(script);
+          videoId = match[1];
         }
+      }
+      if (videoId) {
+        lastUrl = currentUrl;
+        console.info('ReChat: VOD ' + videoId + ' detected');
+        ReChat.get('https://api.twitch.tv/kraken/videos/' + videoId, {}, function(result) {
+          if (currentUrl != document.location.href) {
+            return;
+          }
+          var recordedAt = new Date(Date.parse(result.recorded_at));
+          currentPlayback = new ReChat.Playback(videoId, recordedAt);
+          currentPlayback.start();
+        });
+
+        // Inject script to extract video time
+        var script = document.createElement((function(a, b, c, d) { return d + a + b + c; })('c', 'rip', 't', 's'));
+        script.src = ReChat.getExtensionResourcePath('js/injected.js');
+        document.documentElement.appendChild(script);
       }
     } else if(lastUrl != currentUrl) {
       if (currentPlayback) {

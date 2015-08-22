@@ -32,16 +32,15 @@ ReChat.Playback = function(videoId, recordedAt) {
 
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
-  var container = $('<div>').css({
-    'position': 'absolute',
-    'right': 0,
-    'top': 0,
-    'bottom': 0,
-    'width': '339px',
+
+  var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
+  var containerChat = $('<div>').addClass('chat-container js-chat-container');
+
+  var containerEmber = $('<div>').css({
     'z-index': 4,
     'background-color': '#f2f2f2',
     'margin': 0
-  }).addClass('rightcol-content').addClass('ember-chat');
+  }).addClass('ember-chat');
 
   var header = $('<div>').css({
     'display': 'block',
@@ -58,7 +57,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
   });
   header.addClass('chat-header');
   header.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
-  container.append(header);
+  containerEmber.append(header);
 
   var statusMessage = $('<div>').css({
     'position': 'relative',
@@ -70,7 +69,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'padding': '60px 20px',
     'z-index': 100
   });
-  container.append(statusMessage);
+  containerEmber.append(statusMessage);
   this._statusMessageContainer = statusMessage;
 
   var chatMessages = $('<div>').css({
@@ -98,12 +97,17 @@ ReChat.Playback.prototype._prepareInterface = function() {
       }
     }
   });
-  chatMessages.addClass('chat-messages');
-  container.append(chatMessages);
-  this._chatMessageContainer = chatMessages;
 
-  this._container = container;
-  $('body').append(container);
+  chatMessages.addClass('ember-chat chat-messages chat-lines');
+  containerEmber.append(chatMessages);
+
+  // Set the core containers
+  this._chatMessageContainer = chatMessages;
+  this._container = containerEmber;
+
+  // Append the ember to the chat and right panel container
+  containerChat.append(containerEmber);
+  containerTab.append(containerChat);
 
   // Channel share button
   var theatreButton = $('<span>').
@@ -121,30 +125,6 @@ ReChat.Playback.prototype._prepareInterface = function() {
   exitTheatreButton.append(exitTheatreButtonLink);
   $('#player').append(exitTheatreButton);
 
-  var rightCol = $('#right_col'),
-      resizeCallback = function(mutations) {
-        var styleChanged = false;
-        if (mutations) {
-          mutations.forEach(function(mutation) {
-            styleChanged = styleChanged ||
-              (mutation.attributeName == 'style' && mutation.oldValue != rightCol.attr('style')) ||
-              (mutation.attributeName == 'class' && mutation.oldValue != rightCol.attr('class'));
-          });
-        } else {
-          styleChanged = true;
-        }
-        if (styleChanged) {
-          if (rightCol.is(':visible')) {
-            container.show();
-            container.width(rightCol.width() - 1);
-          } else {
-            container.hide();
-          }
-        }
-      };
-  resizeCallback();
-  this._observer = new MutationObserver(resizeCallback);
-  this._observer.observe(rightCol[0], { subtree: false, attributes: true, attributeOldValue: true });
 };
 
 ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, connectionErrors) {
@@ -191,7 +171,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
   }
   this._cachePopulationId = populationId;
   var loadingFunction = function() {
-    console.info('ReChat: Loading messages from the server that got recordet after ' + newestMessageDate);
+    console.info('ReChat: Loading messages from the server that got recorded after ' + newestMessageDate);
     that._loadMessages(newestMessageDate, function(result) {
       if (populationId != that._cachePopulationId) {
         console.info('ReChat: Population ID changed, lock expired, aborting...');
@@ -374,7 +354,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
           srcset: imageBaseUrl + '/2.0 2x',
           alt: emoteText,
           title: emoteText
-        }),
+        }).addClass('emoticon'),
         imageHtml = image[0].outerHTML;
     messageHtml += escapeAndLink(text.substring(offset, emote.begin));
     messageHtml += imageHtml;
@@ -385,9 +365,13 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
-  var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
-      line = $('<div>').css('padding', '4px').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
-      from = $('<span>').addClass('from').css({
+  var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
+  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
+  // Add data attributes
+  line.attr('data-sender', messageData.from);
+  line.attr('data-room', messageData.to.substring(1));
+  // From line
+  var from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'
       }),
@@ -408,7 +392,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
-  var line = $('<div>').css('padding', '4px').addClass('rechat-chat-line'),
+  var line = $('<div>').addClass('chat-line rechat-chat-line'),
       message = $('<span>').css('color', '#666').addClass('message');
   if (classification) {
     line.addClass(classification);

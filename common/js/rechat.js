@@ -15,6 +15,8 @@ this.ReChat = $.extend({
     stripPrefix: false
   }),
 
+  subscriberUrl: null,
+
   get: function(path, params, success, failure) {
     var jqxhr = $.get(path, params, success);
     if (failure) {
@@ -387,6 +389,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
       line = $('<div>').css('padding', '4px').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
+      badges = $('<span>').addClass('float-left').addClass('badges'),
       from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'
@@ -400,10 +403,23 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   } else {
     colon.text(':');
   }
+  // Check if turbo user
+  if(messageData.turbo) {
+    var badge_content = $('<div>').addClass('float-left').addClass('badge').addClass('turbo');
+    badge_content.prop('title', 'Twitch Turbo');
+    badges.append(badge_content).append(' ');
+  }
+  // Check if channel subscriber
+  if(messageData.subscriber && ReChat.subscriberUrl != null) {
+    var badge_content = $('<div>').addClass('float-left').addClass('badge').addClass('subscriber')
+    badge_content.prop('original-title', 'Channel Subscriber');
+    badge_content.css('background-image', 'url('+ReChat.subscriberUrl+')');
+    badges.append(badge_content).append(' ');
+  }
   from.text(messageData.from.replace('\\s', ' '));
   var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
   message.html(messageHtml);
-  line.append(from).append(colon).append(' ').append(message);
+  line.append(badges).append(from).append(colon).append(' ').append(message);
   return line;
 };
 
@@ -444,9 +460,25 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
   return this._formatSystemMessage($.extend(messageData, { message: message }), classification);
 };
 
+ReChat.Playback.prototype._getSubscriberUrl  = function() {
+  // Ajax to twitch api
+  $.ajax({
+    url: 'https://api.twitch.tv/kraken/chat/'+($(location).prop('pathname').split('/')[1])+'/badges',
+    success: function(data){
+      try {
+        ReChat.subscriberUrl = data['subscriber']['image'];
+      } catch(err) {
+        ReChat.subscriberUrl = null;
+        console.info('ReChat: No subscriber badge found');
+      }
+    }
+  });
+};
+
 ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
+  this._getSubscriberUrl();
   this._prepareInterface();
   this._replay();
 };

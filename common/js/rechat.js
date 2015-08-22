@@ -389,7 +389,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor),
       line = $('<div>').css('padding', '4px').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from),
-      badges = $('<span>').addClass('badges'),
+      badges = $('<span>').addClass('float-left').addClass('badges'),
       from = $('<span>').addClass('from').css({
         'color': userColor,
         'font-weight': 'bold'
@@ -405,13 +405,13 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   }
   // Check if turbo user
   if(messageData.turbo) {
-    var badge_content = $('<div>').addClass('badge').addClass('turbo');
+    var badge_content = $('<div>').addClass('float-left').addClass('badge').addClass('turbo');
     badge_content.prop('title', 'Twitch Turbo');
     badges.append(badge_content).append(' ');
   }
   // Check if channel subscriber
   if(messageData.subscriber && ReChat.subscriberUrl != null) {
-    var badge_content = $('<div>').addClass('badge').addClass('subscriber')
+    var badge_content = $('<div>').addClass('float-left').addClass('badge').addClass('subscriber')
     badge_content.prop('original-title', 'Channel Subscriber');
     badge_content.css('background-image', 'url('+ReChat.subscriberUrl+')');
     badges.append(badge_content).append(' ');

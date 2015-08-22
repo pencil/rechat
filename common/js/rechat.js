@@ -33,7 +33,7 @@ ReChat.Playback = function(videoId, recordedAt) {
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
 
-  var containerTab = $('#right_col .rightcol-content .tab-container').not(".hidden").first();
+  var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
 
   var containerEmber = $('<div>').css({
@@ -98,9 +98,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     }
   });
 
-  chatMessages.addClass('ember-chat');
-  chatMessages.addClass('chat-messages');
-  chatMessages.addClass('chat-lines');
+  chatMessages.addClass('ember-chat chat-messages chat-lines');
   containerEmber.append(chatMessages);
 
   // Set the core containers
@@ -368,7 +366,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
-  var line = $('<div>').addClass('chat-line').addClass('rechat-chat-line').addClass('rechat-user-' + messageData.from);
+  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
   // Add data attributes
   line.attr('data-sender', messageData.from);
   line.attr('data-room', messageData.to.substring(1));
@@ -394,7 +392,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
-  var line = $('<div>').addClass('chat-line').addClass('rechat-chat-line'),
+  var line = $('<div>').addClass('chat-line rechat-chat-line'),
       message = $('<span>').css('color', '#666').addClass('message');
   if (classification) {
     line.addClass(classification);

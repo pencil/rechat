@@ -412,7 +412,7 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
       case "mod":
         badgeContent.addClass('moderator').prop('title', 'Moderator');
         break;
-      case "global-mod":
+      case "global_mod":
         badgeContent.addClass('global-moderator').prop('title', 'Global Moderator');
         break;
       case "admin":

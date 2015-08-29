@@ -371,9 +371,13 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
   var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
+  var badges = $('<span>').addClass('float-left').addClass('badges');
+
   // Add data attributes
   line.attr('data-sender', messageData.from);
   line.attr('data-room', messageData.to.substring(1));
+  // Apply possible sub/turbo/usertype/broadcaster badges to message
+  this._applyMessageBadges(messageData, badges);
   // From line
   var from = $('<span>').addClass('from').css({
         'color': userColor,
@@ -388,11 +392,53 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   } else {
     colon.text(':');
   }
+
   from.text(messageData.from.replace('\\s', ' '));
   var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
   message.html(messageHtml);
-  line.append(from).append(colon).append(' ').append(message);
+  line.append(badges).append(from).append(colon).append(' ').append(message);
   return line;
+};
+
+ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
+  if (messageData.from.toLowerCase() == this._channelName) {
+    var badgeContent = this._buildBadge().addClass('broadcaster')
+                                 .prop('title', 'Broadcaster');
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.usertype != null) {
+    var badgeContent = this._buildBadge();
+    switch (messageData.usertype) {
+      case "mod":
+        badgeContent.addClass('moderator').prop('title', 'Moderator');
+        break;
+      case "global-mod":
+        badgeContent.addClass('global-moderator').prop('title', 'Global Moderator');
+        break;
+      case "admin":
+        badgeContent.addClass('admin').prop('title', 'Twitch Admin');
+        break;
+      case "staff":
+        badgeContent.addClass('staff').prop('title', 'Twitch Staff');
+        break;
+    }
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.turbo) {
+    var badgeContent = this._buildBadge().addClass('turbo')
+                                 .prop('title', 'Twitch Turbo');
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.subscriber && ReChat.subscriberUrl != null) {
+    var badgeContent = this._buildBadge().addClass('subscriber')
+                                         .prop('title', 'Subscriber')
+                                         .css('background-image', 'url(' + ReChat.subscriberUrl + ')');
+    badges.append(badgeContent).append(' ');
+  }
+}
+
+ReChat.Playback.prototype._buildBadge = function() {
+  return $('<div>').addClass('float-left badge ');
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {

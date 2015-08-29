@@ -15,6 +15,8 @@ this.ReChat = $.extend({
     stripPrefix: false
   }),
 
+  subscriberUrl: null,
+
   get: function(path, params, success, failure) {
     var jqxhr = $.get(path, params, success);
     if (failure) {
@@ -32,6 +34,8 @@ ReChat.Playback = function(videoId, recordedAt) {
 
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
+
+  this._channelName = $(location).prop('pathname').split('/')[1];
 
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
@@ -428,10 +432,25 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
   return this._formatSystemMessage($.extend(messageData, { message: message }), classification);
 };
 
+ReChat.Playback.prototype._getSubscriberUrl = function() {
+  $.ajax({
+    url: 'https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
+    success: function(data) {
+      try {
+        ReChat.subscriberUrl = data['subscriber']['image'];
+      } catch (err) {
+        ReChat.subscriberUrl = null;
+        console.info('ReChat: No subscriber badge found');
+      }
+    }
+  });
+};
+
 ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
   this._prepareInterface();
+  this._getSubscriberUrl();
   this._replay();
 };
 

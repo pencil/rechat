@@ -36,6 +36,8 @@ ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
 
   this._channelName = $(location).prop('pathname').split('/')[1];
+  this._subscriberUrl = null;
+  this._getSubscriberUrl();
 
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
@@ -429,10 +431,10 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
                                  .prop('title', 'Twitch Turbo');
     badges.append(badgeContent).append(' ');
   }
-  if (messageData.subscriber && ReChat.subscriberUrl != null) {
+  if (messageData.subscriber && this._subscriberUrl != null) {
     var badgeContent = this._buildBadge().addClass('subscriber')
                                          .prop('title', 'Subscriber')
-                                         .css('background-image', 'url(' + ReChat.subscriberUrl + ')');
+                                         .css('background-image', 'url(' + this._subscriberUrl + ')');
     badges.append(badgeContent).append(' ');
   }
 }
@@ -479,13 +481,14 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
 };
 
 ReChat.Playback.prototype._getSubscriberUrl = function() {
+  var that = this;
   $.ajax({
     url: 'https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
     success: function(data) {
       try {
-        ReChat.subscriberUrl = data['subscriber']['image'];
+        that._subscriberUrl = data['subscriber']['image'];
       } catch (err) {
-        ReChat.subscriberUrl = null;
+        that._subscriberUrl = null;
         console.info('ReChat: No subscriber badge found');
       }
     }
@@ -496,7 +499,6 @@ ReChat.Playback.prototype.start = function() {
   console.info('ReChat ' + ReChat.getExtensionVersion() + ': start');
   this._timeouts = {};
   this._prepareInterface();
-  this._getSubscriberUrl();
   this._replay();
 };
 

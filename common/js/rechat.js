@@ -404,8 +404,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
 
 ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
   if (messageData.from.toLowerCase() == this._channelName) {
-    var badgeContent = this._buildBadge().addClass('broadcaster')
-                                 .prop('title', 'Broadcaster');
+    var badgeContent = this._buildBadge().addClass('broadcaster').prop('title', 'Broadcaster');
     badges.append(badgeContent).append(' ');
   }
   if (messageData.usertype != null) {

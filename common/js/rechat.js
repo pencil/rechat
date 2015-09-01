@@ -427,8 +427,7 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
     badges.append(badgeContent).append(' ');
   }
   if (messageData.turbo) {
-    var badgeContent = this._buildBadge().addClass('turbo')
-                                 .prop('title', 'Twitch Turbo');
+    var badgeContent = this._buildBadge().addClass('turbo').prop('title', 'Twitch Turbo');
     badges.append(badgeContent).append(' ');
   }
   if (messageData.subscriber && this._subscriberUrl != null) {

@@ -15,8 +15,6 @@ this.ReChat = $.extend({
     stripPrefix: false
   }),
 
-  subscriberUrl: null,
-
   get: function(path, params, success, failure) {
     var jqxhr = $.get(path, params, success);
     if (failure) {

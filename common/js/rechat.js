@@ -478,17 +478,17 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
 
 ReChat.Playback.prototype._getSubscriberUrl = function() {
   var that = this;
-  $.ajax({
-    url: 'https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
-    success: function(data) {
-      try {
-        that._subscriberUrl = data['subscriber']['image'];
-      } catch (err) {
-        that._subscriberUrl = null;
-        console.info('ReChat: No subscriber badge found');
-      }
-    }
-  });
+  ReChat.get('https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
+             {},
+             function(data) {
+               try {
+                 that._subscriberUrl = data['subscriber']['image'];
+               } catch (err) {
+                 that._subscriberUrl = null;
+               }
+             },
+             function(err) { console.log('Error parsing subscriber badge'); }
+  );
 };
 
 ReChat.Playback.prototype.start = function() {

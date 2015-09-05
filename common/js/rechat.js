@@ -357,7 +357,8 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
           src: imageBaseUrl + '/1.0',
           srcset: imageBaseUrl + '/2.0 2x',
           alt: emoteText,
-          title: emoteText
+          title: emoteText,
+          style: 'padding-top: 0; vertical-align: middle!important;' // BTTV style overriding
         }).addClass('emoticon'),
         imageHtml = image[0].outerHTML;
     messageHtml += escapeAndLink(text.substring(offset, emote.begin));
@@ -436,7 +437,9 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
 }
 
 ReChat.Playback.prototype._buildBadge = function() {
-  return $('<div>').addClass('float-left badge ');
+  return $('<div>').addClass('float-left badge ').attr({
+    style: 'margin: 1px 3px 0 0; float: left!important;' // BTTV style overriding
+  });
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {

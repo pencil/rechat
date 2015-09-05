@@ -371,7 +371,8 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
-  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
+  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from)
+                       .attr('style', 'line-height: 20px!important;'); // BTTV style overriding
   var badges = $('<span>').addClass('float-left').addClass('badges');
 
   // Add data attributes

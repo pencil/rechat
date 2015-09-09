@@ -357,8 +357,7 @@ ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
           src: imageBaseUrl + '/1.0',
           srcset: imageBaseUrl + '/2.0 2x',
           alt: emoteText,
-          title: emoteText,
-          style: 'padding-top: 0; vertical-align: middle!important;' // BTTV style overriding
+          title: emoteText
         }).addClass('emoticon'),
         imageHtml = image[0].outerHTML;
     messageHtml += escapeAndLink(text.substring(offset, emote.begin));
@@ -385,8 +384,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
         'font-weight': 'bold'
       }),
       colon = $('<span>').addClass('colon'),
-      message = $('<span>').addClass('message').css({ 'word-wrap': 'break-word' })
-                           .attr('style', 'line-height: 20px!important;'); // BTTV style overriding
+      message = $('<span>').addClass('message').css({ 'word-wrap': 'break-word' });
       messageText = messageData.message;
   if (messageText.substring(0, 8) == "\x01ACTION ") {
     message.css({ 'color': userColor });
@@ -439,7 +437,7 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
 
 ReChat.Playback.prototype._buildBadge = function() {
   return $('<div>').addClass('float-left badge ').attr({
-    style: 'margin: 1px 3px 0 0; float: left!important;' // BTTV style overriding
+    style: 'vertical-align: middle!important;' // BTTV style overriding
   });
 };
 

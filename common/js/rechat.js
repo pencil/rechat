@@ -281,10 +281,10 @@ ReChat.Playback.prototype._replay = function() {
   if (typeof previousVideoTime == 'undefined') {
     // first invocation => populate cache
     this._showStatusMessage('Loading messages...');
-    console.info('First invocation, populating cache for the first time');
+    console.info('ReChat: First invocation, populating cache for the first time');
     this._autoPopulateCache(true);
   } else if (previousVideoTime - 10 > currentVideoTime || currentVideoTime > previousVideoTime + 60) {
-    console.info('Time jumped from ' + previousVideoTime + ' to ' + currentVideoTime + ', discarding cache and starting over');
+    console.info('ReChat: Time jumped from ' + previousVideoTime + ' to ' + currentVideoTime + ', discarding cache and starting over');
     this._showStatusMessage('Loading messages...');
     this._firstMessageDate = null;
     this._nextChunkDate = null;

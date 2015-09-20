@@ -40,7 +40,6 @@ ReChat.Playback.prototype._prepareInterface = function() {
 
   var containerEmber = $('<div>').css({
     'z-index': 4,
-    'background-color': '#f2f2f2',
     'margin': 0
   }).addClass('ember-chat');
   this._container = containerEmber;

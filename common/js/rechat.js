@@ -174,7 +174,7 @@ ReChat.Playback.prototype._getChunkTime = function(date) {
   return chunkTime;
 }
 
-ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
+ReChat.Playback.prototype._autoPopulateCache = function() {
   var newestMessageDate = this._nextChunkDate,
       currentAbsoluteVideoTime = this._currentAbsoluteVideoTime(),
       populationId = new Date(),
@@ -203,7 +203,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(dropExistingCache) {
         console.info('ReChat: Received ' + result.total + ' hits (' + result.begin + ' - ' + result.end + ')');
         newestMessage = hits[hits.length - 1];
         that._nextChunkDate = new Date(result.end);
-        if (dropExistingCache) {
+        if (!that._cachedMessages || that._cachedMessages.length == 0) {
           that._firstMessageDate = new Date(hits[0].recieved_at);
           that._cachedMessages = hits;
         } else {
@@ -261,14 +261,14 @@ ReChat.Playback.prototype._replay = function() {
     // first invocation => populate cache
     this._showStatusMessage('Loading messages...');
     console.info('First invocation, populating cache for the first time');
-    this._autoPopulateCache(true);
+    this._autoPopulateCache();
   } else if (previousVideoTime - 10 > currentVideoTime || currentVideoTime > previousVideoTime + 60) {
     console.info('Time jumped from ' + previousVideoTime + ' to ' + currentVideoTime + ', discarding cache and starting over');
     this._showStatusMessage('Loading messages...');
     this._firstMessageDate = null;
     this._nextChunkDate = null;
     this._cachedMessages = [];
-    this._autoPopulateCache(true);
+    this._autoPopulateCache();
   } else if (this._noChunkAfter && currentAbsoluteVideoTime >= this._noChunkAfter) {
     if (this._chatMessageContainer.is(':empty')) {
       this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.', 'sad.png');

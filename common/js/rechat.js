@@ -62,14 +62,15 @@ ReChat.Playback.prototype._prepareInterface = function() {
   containerEmber.append(header);
 
   var statusMessage = $('<div>').css({
-    'position': 'relative',
-    'top': '50px',
+    'position': 'absolute',
+    'z-index': 1,
     'text-align': 'center',
-    'background-repeat': 'no-repeat',
-    'background-position': 'center top',
-    'background-size': '40px 40px',
-    'padding': '60px 20px',
-    'z-index': 100
+    'top': '40px',
+    'left': 0,
+    'right': 0,
+    'background-color': 'rgba(0,0,0,0.7)',
+    'color': '#fff',
+    'padding': '5px 0'
   });
   containerEmber.append(statusMessage);
   this._statusMessageContainer = statusMessage;
@@ -92,7 +93,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
   var moreMessagesIndicator = $('<div>').css({
     'cursor': 'pointer',
     'position': 'absolute',
-    'z-index': '1',
+    'z-index': 1,
     'text-align': 'center',
     'left': 0,
     'right': 0,
@@ -245,15 +246,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(delayLoading) {
   }
 };
 
-ReChat.Playback.prototype._showStatusMessage = function(message, statusImage) {
-  if (!statusImage) {
-    statusImage = 'spinner.gif';
-  }
-  if (this._lastStatusImage != statusImage) {
-    this._statusMessageContainer.css('background-image', 'url(' + ReChat.getExtensionResourcePath('res/' + statusImage) + ')');
-    this._lastStatusImage = statusImage;
-  }
-  this._chatMessageContainer.empty();
+ReChat.Playback.prototype._showStatusMessage = function(message) {
   this._statusMessageContainer.text(message);
   this._statusMessageContainer.show();
 };
@@ -292,9 +285,9 @@ ReChat.Playback.prototype._replay = function() {
     this._autoPopulateCache(true);
   } else if (this._noChunkAfter && currentAbsoluteVideoTime >= this._noChunkAfter) {
     if (this._chatMessageContainer.is(':empty')) {
-      this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.', 'sad.png');
+      this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.');
     }
-  } else if (this._firstMessageDate && this._firstMessageDate > currentAbsoluteVideoTime && this._chatMessageContainer.is(':empty')) {
+  } else if (this._firstMessageDate && this._firstMessageDate > currentAbsoluteVideoTime) {
     var secondsToFirstMessage = Math.ceil(this._firstMessageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
     if (secondsToFirstMessage > 0) {
       var minutesToFirstMessage = Math.floor(secondsToFirstMessage / 60);

@@ -44,6 +44,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'background-color': '#f2f2f2',
     'margin': 0
   }).addClass('ember-chat');
+  this._container = containerEmber;
 
   var header = $('<div>').css({
     'display': 'block',
@@ -86,33 +87,55 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'overflow-x': 'hidden',
     'overflow-y': 'auto'
   });
+  chatMessages.addClass('ember-chat chat-messages chat-lines');
+  containerEmber.append(chatMessages);
+  this._chatMessageContainer = chatMessages;
+
+  var moreMessagesIndicator = $('<div>').css({
+    'cursor': 'pointer',
+    'position': 'absolute',
+    'z-index': '1',
+    'text-align': 'center',
+    'left': 0,
+    'right': 0,
+    'bottom': 0,
+    'background-color': 'rgba(0,0,0,0.7)',
+    'color': '#fff',
+    'padding': '5px 0'
+  });
+  moreMessagesIndicator.addClass('ember-view more-messages-indicator');
+  moreMessagesIndicator.text('More messages below.');
+  moreMessagesIndicator.hide();
+  moreMessagesIndicator.click(function() {
+    chatMessages.scrollTop(chatMessages.prop('scrollHeight') - chatMessages.prop('clientHeight'));
+    that._staydown.lock();
+  })
+  containerEmber.append(moreMessagesIndicator);
+  this._moreMessageIndicator = moreMessagesIndicator;
+
+  // Append the ember to the chat and right panel container
+  containerChat.append(containerEmber);
+  containerTab.append(containerChat);
+
+  // Auto scroll chat messages to bottom
   this._staydown = new StayDown({
     target: chatMessages.get(0),
     interval: 100,
     callback: function(event) {
       switch (event) {
         case 'release':
+          that._moreMessageIndicator.show();
           that._userScrolling = true;
           break;
         case 'lock':
+          that._moreMessageIndicator.hide();
           that._userScrolling = false;
           break;
       }
     }
   });
 
-  chatMessages.addClass('ember-chat chat-messages chat-lines');
-  containerEmber.append(chatMessages);
-
-  // Set the core containers
-  this._chatMessageContainer = chatMessages;
-  this._container = containerEmber;
-
-  // Append the ember to the chat and right panel container
-  containerChat.append(containerEmber);
-  containerTab.append(containerChat);
-
-  // Channel share button
+  // Add Theatre button
   var theatreButton = $('<span>').
     addClass('theatre-button glyph-only button action tooltip').
     attr('onclick', 'ReChat.handleTheatreMode()').
@@ -174,7 +197,7 @@ ReChat.Playback.prototype._getChunkTime = function(date) {
   return chunkTime;
 }
 
-ReChat.Playback.prototype._autoPopulateCache = function() {
+ReChat.Playback.prototype._autoPopulateCache = function(delayLoading) {
   var newestMessageDate = this._nextChunkDate,
       currentAbsoluteVideoTime = this._currentAbsoluteVideoTime(),
       populationId = new Date(),
@@ -214,7 +237,7 @@ ReChat.Playback.prototype._autoPopulateCache = function() {
     });
   };
 
-  if (dropExistingCache) {
+  if (delayLoading) {
     if (this._loadingTimeout) {
       clearTimeout(this._loadingTimeout);
     }
@@ -261,14 +284,14 @@ ReChat.Playback.prototype._replay = function() {
     // first invocation => populate cache
     this._showStatusMessage('Loading messages...');
     console.info('First invocation, populating cache for the first time');
-    this._autoPopulateCache();
+    this._autoPopulateCache(true);
   } else if (previousVideoTime - 10 > currentVideoTime || currentVideoTime > previousVideoTime + 60) {
     console.info('Time jumped from ' + previousVideoTime + ' to ' + currentVideoTime + ', discarding cache and starting over');
     this._showStatusMessage('Loading messages...');
     this._firstMessageDate = null;
     this._nextChunkDate = null;
     this._cachedMessages = [];
-    this._autoPopulateCache();
+    this._autoPopulateCache(true);
   } else if (this._noChunkAfter && currentAbsoluteVideoTime >= this._noChunkAfter) {
     if (this._chatMessageContainer.is(':empty')) {
       this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.', 'sad.png');

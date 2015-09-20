@@ -213,6 +213,7 @@ ReChat.Playback.prototype._autoPopulateCache = function(delayLoading) {
         console.info('ReChat: Caching ID changed, lock expired, aborting...');
         return;
       }
+      that._cacheExhaustionHandled = false;
       if (result.no_messages) {
         if (!result.next) {
           that._noChunkAfter = chunkStartDate;
@@ -225,13 +226,12 @@ ReChat.Playback.prototype._autoPopulateCache = function(delayLoading) {
         console.info('ReChat: Received ' + result.total + ' hits (' + result.begin + ' - ' + result.end + ')');
         newestMessage = hits[hits.length - 1];
         that._nextChunkDate = new Date(result.end);
-        if (!that._cachedMessages || that._cachedMessages.length == 0) {
+        if (!that._cachedMessages || !that._cachedMessages.length) {
           that._firstMessageDate = new Date(hits[0].recieved_at);
           that._cachedMessages = hits;
         } else {
           Array.prototype.push.apply(that._cachedMessages, hits);
         }
-        that._cacheExhaustionHandled = false;
       }
     });
   };
@@ -279,21 +279,27 @@ ReChat.Playback.prototype._replay = function() {
   } else if (previousVideoTime - 10 > currentVideoTime || currentVideoTime > previousVideoTime + 60) {
     console.info('ReChat: Time jumped from ' + previousVideoTime + ' to ' + currentVideoTime + ', discarding cache and starting over');
     this._showStatusMessage('Loading messages...');
+    if (!this._chatMessageContainer.is(':empty')) {
+      this._chatMessageContainer.append(this._formatSystemMessage({ message: 'ReChat: Time traveling...' }));
+    }
+    this._messagesDisplayed = false;
     this._firstMessageDate = null;
     this._nextChunkDate = null;
-    this._cachedMessages = [];
+    this._cachedMessages = null;
     this._autoPopulateCache(true);
   } else if (this._noChunkAfter && currentAbsoluteVideoTime >= this._noChunkAfter) {
     if (this._chatMessageContainer.is(':empty')) {
       this._showStatusMessage('Sorry, no chat messages for this VOD available. The VOD is either too old or the channel didn\'t get enough viewers when it was live.');
     }
-  } else if (this._firstMessageDate && this._firstMessageDate > currentAbsoluteVideoTime) {
+  } else if (!this._messagesDisplayed && this._firstMessageDate && this._firstMessageDate > currentAbsoluteVideoTime) {
     var secondsToFirstMessage = Math.ceil(this._firstMessageDate.getTime() / 1000 - currentAbsoluteVideoTime.getTime() / 1000);
     if (secondsToFirstMessage > 0) {
       var minutesToFirstMessage = Math.floor(secondsToFirstMessage / 60);
       secondsToFirstMessage -= minutesToFirstMessage * 60;
       secondsToFirstMessage = secondsToFirstMessage < 10 ? '0' + secondsToFirstMessage : secondsToFirstMessage;
       this._showStatusMessage('First recorded message will show up in ' + minutesToFirstMessage + ':' + secondsToFirstMessage);
+    } else {
+      this._hideStatusMessage();
     }
     this._checkCacheExhaustion(currentAbsoluteVideoTime);
   } else if (!this._cachedMessages || !this._cachedMessages.length) {
@@ -315,6 +321,7 @@ ReChat.Playback.prototype._replay = function() {
           var formattedMessage = this._formatChatMessage(messageData);
         }
         if (formattedMessage != null) {
+          this._messagesDisplayed = true;
           this._hideStatusMessage();
           this._chatMessageContainer.append(formattedMessage);
         }

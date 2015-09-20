@@ -1,6 +1,6 @@
 {
   "name": "rechat",
-  "fullName": "ReChat for Twitch™",
+  "title": "ReChat for Twitch™",
   "id": "firefox@rechat.org",
   "description": "Adds chat messages from the past to your favorite Twitch VODs",
   "author": "Nils Caspar",
@@ -9,6 +9,7 @@
   "homepage": "https://www.rechat.org/",
 
   "main": "lib/main.js",
+  "updateURL": "https://www.rechat.org/update.rdf",
 
   "permissions": {
     "cross-domain-content": [

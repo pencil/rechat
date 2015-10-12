@@ -38,6 +38,12 @@ ReChat.Playback.prototype._prepareInterface = function() {
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
 
+  var ember_settings = window.App && App.__container__.lookup('controller:settings');
+
+  if ( ember_settings.get('modal.darkMode') ) {
+    containerChat.addClass('dark');
+  }
+
   var containerEmber = $('<div>').css({
     'z-index': 4,
     'margin': 0

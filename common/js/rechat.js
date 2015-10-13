@@ -136,25 +136,24 @@ ReChat.Playback.prototype._loadMessages = function(recievedAfter, callback, conn
   if (!connectionErrors) {
     connectionErrors = 0;
   }
-  ReChat.get(ReChat.searchBaseUrl + this.videoId,
-             {
-               'include_jtv': 'true',
-               'after': recievedAfter.toISOString()
-             },
-             callback,
-             function(response) {
-               if (response && response.status == 404) {
-                 // invalid VOD
-                 that._messageStreamEndAt = recievedAfter;
-               } else {
-                 // server error, let's try again in 10 seconds
-                 setTimeout(function() {
-                   if (!that._stopped) {
-                     that._loadMessages(recievedAfter, callback, connectionErrors + 1);
-                   }
-                 }, 1000 * Math.pow(2, connectionErrors));
-               }
-             });
+  ReChat.get(ReChat.searchBaseUrl + this.videoId, {
+    'include_jtv': 'true',
+    'after': recievedAfter.toISOString()
+  },
+  callback,
+  function(response) {
+    if (response && response.status == 404) {
+      // invalid VOD
+      that._messageStreamEndAt = recievedAfter;
+    } else {
+      // server error, let's try again in 10 seconds
+      setTimeout(function() {
+        if (!that._stopped) {
+          that._loadMessages(recievedAfter, callback, connectionErrors + 1);
+        }
+      }, 1000 * Math.pow(2, connectionErrors));
+    }
+  });
 };
 
 ReChat.Playback.prototype._currentVideoTime = function() {
@@ -384,7 +383,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
         'font-weight': 'bold'
       }),
       colon = $('<span>').addClass('colon'),
-      message = $('<span>').addClass('message').css({ 'word-wrap': 'break-word' });
+      message = $('<span>').addClass('message').css({ 'word-wrap': 'break-word' }),
       messageText = messageData.message;
   if (messageText.substring(0, 8) == "\x01ACTION ") {
     message.css({ 'color': userColor });
@@ -436,9 +435,7 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
 }
 
 ReChat.Playback.prototype._buildBadge = function() {
-  return $('<div>').addClass('float-left badge ').attr({
-    style: 'vertical-align: middle!important;' // BTTV style overriding
-  });
+  return $('<div>').addClass('float-left').addClass('badge');
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
@@ -481,15 +478,17 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
 ReChat.Playback.prototype._getSubscriberUrl = function() {
   var that = this;
   ReChat.get('https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
-             {},
-             function(data) {
-               try {
-                 that._subscriberUrl = data['subscriber']['image'];
-               } catch (err) {
-                 that._subscriberUrl = null;
-               }
-             },
-             function(err) { console.log('Error parsing subscriber badge'); }
+    {},
+    function(data) {
+      try {
+        that._subscriberUrl = data['subscriber']['image'];
+      } catch (err) {
+        that._subscriberUrl = null;
+      }
+    },
+    function(err) {
+      console.log('Error parsing subscriber badge');
+    }
   );
 };
 

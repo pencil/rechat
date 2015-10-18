@@ -17,8 +17,6 @@ this.ReChat = $.extend({
     stripPrefix: false
   }),
 
-  bttvEmotes: {},
-
   get: function(path, params, success, failure) {
     var jqxhr = $.get(path, params, success);
     if (failure) {
@@ -28,13 +26,24 @@ this.ReChat = $.extend({
   }
 }, this.ReChat || {});
 
-ReChat.loadBTTVEmotes = function(channel) {
-  ReChat.bttvEmotes = {};
+ReChat.BTTVDetected = function() {
+  return $('script[src*="betterttv"]').length != 0;
+}
+
+ReChat.Playback = function(videoId, recordedAt) {
+  this.videoId = videoId;
+  this.recordedAt = recordedAt;
+  this.streamDelay = ReChat.defaultStreamDelay;
+};
+
+ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
+  var that = this;
+  this.bttvEmotes = {};
 
   ['emotes', 'channels/' + encodeURIComponent(channel)].forEach(function(endpoint) {
     $.getJSON('https://api.betterttv.net/2/' + endpoint).done(function(data) {
       data.emotes.forEach(function(emote) {
-        ReChat.bttvEmotes[emote.code] = {
+        that.bttvEmotes[emote.code] = {
           restrictions: emote.restrictions,
           code: emote.code,
           id: emote.id,
@@ -44,12 +53,6 @@ ReChat.loadBTTVEmotes = function(channel) {
       });
     });
   });
-};
-
-ReChat.Playback = function(videoId, recordedAt) {
-  this.videoId = videoId;
-  this.recordedAt = recordedAt;
-  this.streamDelay = ReChat.defaultStreamDelay;
 };
 
 ReChat.Playback.prototype._prepareInterface = function() {
@@ -444,10 +447,10 @@ ReChat.Playback.prototype._replaceBTTVEmoticons = function(part) {
   var codeWithoutSymbols = part.replace(/(^[~!@#$%\^&\*\(\)]+|[~!@#$%\^&\*\(\)]+$)/g, '');
 
   var emote = null;
-  if (ReChat.bttvEmotes.hasOwnProperty(part)) {
-    emote = ReChat.bttvEmotes[part];
-  } else if (ReChat.bttvEmotes.hasOwnProperty(codeWithoutSymbols)) {
-    emote = ReChat.bttvEmotes[codeWithoutSymbols];
+  if (this.bttvEmotes.hasOwnProperty(part)) {
+    emote = this.bttvEmotes[part];
+  } else if (this.bttvEmotes.hasOwnProperty(codeWithoutSymbols)) {
+    emote = this.bttvEmotes[codeWithoutSymbols];
   } else {
     return part;
   }
@@ -484,7 +487,9 @@ ReChat.Playback.prototype._textFormatter = function(text, emotes) {
   for(var i = 0; i < messageParts.length; i++) {
     var part = messageParts[i];
 
-    part = this._replaceBTTVEmoticons(part);
+    if (this.bttvEmotes && this.bttvEmotes.length) {
+      part = this._replaceBTTVEmoticons(part);
+    }
     part = this._escapeAndLink(part);
 
     part = Array.isArray(part) ? part[0] : part;
@@ -617,9 +622,13 @@ $(document).ready(function() {
 
           var recordedAt = new Date(Date.parse(result.recorded_at));
           currentPlayback = new ReChat.Playback(videoId, recordedAt);
-          currentPlayback.start();
 
-          ReChat.loadBTTVEmotes(result.channel.name);
+          if (ReChat.BTTVDetected()) {
+            console.info('ReChat: BTTV detected, loading BTTV emotes...');
+            currentPlayback.loadBTTVEmotes(result.channel.name);
+          }
+
+          currentPlayback.start();
         });
 
         // Inject script to extract video time

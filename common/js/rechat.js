@@ -17,6 +17,8 @@ this.ReChat = $.extend({
     stripPrefix: false
   }),
 
+  bttvEmotes: {},
+
   get: function(path, params, success, failure) {
     var jqxhr = $.get(path, params, success);
     if (failure) {
@@ -25,6 +27,24 @@ this.ReChat = $.extend({
     return null;
   }
 }, this.ReChat || {});
+
+ReChat.loadBTTVEmotes = function(channel) {
+  ReChat.bttvEmotes = {};
+
+  ['emotes', 'channels/' + encodeURIComponent(channel)].forEach(function(endpoint) {
+    $.getJSON('https://api.betterttv.net/2/' + endpoint).done(function(data) {
+      data.emotes.forEach(function(emote) {
+        ReChat.bttvEmotes[emote.code] = {
+          restrictions: emote.restrictions,
+          code: emote.code,
+          id: emote.id,
+          '1x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','1x'),
+          '2x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','2x')
+        };
+      });
+    });
+  });
+};
 
 ReChat.Playback = function(videoId, recordedAt) {
   this.videoId = videoId;
@@ -365,48 +385,113 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
-  var escapeHelper = $('<div>'),
-      escapeAndLink = function(text) {
-        return ReChat.autolinker.link(escapeHelper.text(text).html());
-      };
-  if (!emotes) {
-    return escapeAndLink(text);
-  }
+ReChat.Playback.prototype._replaceTwitchEmoticonsByRanges = function(text, emotes) {
+  if (!emotes) return [ text ];
+
   var emotesToReplace = [],
       emotes = emotes.split('/');
+
   $.each(emotes, function(i, emoteDataRaw) {
     var emoteData = emoteDataRaw.split(':'),
         emoteId = emoteData[0],
         emoteRanges = emoteData[1].split(',');
+
     $.each(emoteRanges, function(j, emoteRange) {
       var emoteRangeParts = emoteRange.split('-'),
           emoteRangeBegin = parseInt(emoteRangeParts[0]),
           emoteRangeEnd = parseInt(emoteRangeParts[1]);
+
       emotesToReplace.push({ id: emoteId, begin: emoteRangeBegin, end: emoteRangeEnd });
     });
   });
+
   emotesToReplace.sort(function(x, y) {
-    return x.begin - y.begin;
+    return y.begin - x.begin;
   });
-  var offset = 0,
-      messageHtml = '';
-  $.each(emotesToReplace, function(i, emote) {
-    var emoteText = text.substring(emote.begin, emote.end + 1),
-        imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id,
-        image = $('<img>').attr({
-          src: imageBaseUrl + '/1.0',
-          srcset: imageBaseUrl + '/2.0 2x',
-          alt: emoteText,
-          title: emoteText
-        }).addClass('emoticon'),
-        imageHtml = image[0].outerHTML;
-    messageHtml += escapeAndLink(text.substring(offset, emote.begin));
-    messageHtml += imageHtml;
-    offset = emote.end + 1;
+
+  var messageParts = [];
+
+  emotesToReplace.forEach(function(emote) {
+    var emoteText = text.substring(emote.begin, emote.end + 1)
+
+    // Unshift the end of the message (that doesn't contain the emote)
+    messageParts.unshift(text.slice(emote.end + 1));
+
+    // Unshift the emote HTML (but not as a string to allow us to process links, escape html, and other emotes)
+    var imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id;
+    messageParts.unshift([
+      $('<img>').attr({
+        src: imageBaseUrl + '/1.0',
+        srcset: imageBaseUrl + '/2.0 2x',
+        alt: emoteText,
+        title: emoteText
+      }).addClass('emoticon')[0].outerHTML
+    ]);
+
+    // Splice the unparsed piece of the message
+    text = text.slice(0, emote.begin);
   });
-  messageHtml += escapeAndLink(text.substring(offset));
-  return messageHtml;
+
+  // Unshift the remaining part of the message (that contains no Twitch emotes)
+  messageParts.unshift(text);
+
+  return messageParts;
+};
+
+ReChat.Playback.prototype._replaceBTTVEmoticons = function(part) {
+  if (typeof part !== 'string') return part;
+
+  var codeWithoutSymbols = part.replace(/(^[~!@#$%\^&\*\(\)]+|[~!@#$%\^&\*\(\)]+$)/g, '');
+
+  var emote = null;
+  if (ReChat.bttvEmotes.hasOwnProperty(part)) {
+    emote = ReChat.bttvEmotes[part];
+  } else if (ReChat.bttvEmotes.hasOwnProperty(codeWithoutSymbols)) {
+    emote = ReChat.bttvEmotes[codeWithoutSymbols];
+  } else {
+    return part;
+  }
+
+  return [
+    part.replace(emote.code, $('<img>').attr({
+      src: emote['1x'],
+      srcset: emote['2x'] + ' 2x',
+      alt: emote.code,
+      title: emote.code
+    }).addClass('emoticon')[0].outerHTML)
+  ];
+};
+
+ReChat.Playback.prototype._escapeAndLink = function(part) {
+  if (typeof part !== 'string') return part;
+
+  return ReChat.autolinker.link(part.replace(/</g,'&lt;').replace(/>/g, '&gt;'));
+};
+
+ReChat.Playback.prototype._textFormatter = function(text, emotes) {
+  var messageParts = this._replaceTwitchEmoticonsByRanges(text, emotes);
+
+  // further split parts by spaces
+  var parts = [];
+  messageParts.forEach(function(part) {
+    if(Array.isArray(part)) return parts.push(part);
+
+    parts = parts.concat(part.split(' '));
+  });
+  messageParts = parts;
+
+  // handles third party emotes, escaping, and linkification
+  for(var i = 0; i < messageParts.length; i++) {
+    var part = messageParts[i];
+
+    part = this._replaceBTTVEmoticons(part);
+    part = this._escapeAndLink(part);
+
+    part = Array.isArray(part) ? part[0] : part;
+    messageParts[i] = part;
+  }
+
+  return messageParts.join(' ');
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
@@ -430,7 +515,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
     colon.text(':');
   }
   from.text(messageData.from.replace('\\s', ' '));
-  var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
+  var messageHtml = this._textFormatter(messageText, messageData.emotes);
   message.html(messageHtml);
   line.append(from).append(colon).append(' ').append(message);
   return line;
@@ -529,9 +614,12 @@ $(document).ready(function() {
           if (currentUrl != document.location.href) {
             return;
           }
+
           var recordedAt = new Date(Date.parse(result.recorded_at));
           currentPlayback = new ReChat.Playback(videoId, recordedAt);
           currentPlayback.start();
+
+          ReChat.loadBTTVEmotes(result.channel.name);
         });
 
         // Inject script to extract video time

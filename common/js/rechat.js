@@ -26,10 +26,33 @@ this.ReChat = $.extend({
   }
 }, this.ReChat || {});
 
+ReChat.BTTVDetected = function() {
+  return $('script[src*="betterttv"]').length != 0;
+}
+
 ReChat.Playback = function(videoId, recordedAt) {
   this.videoId = videoId;
   this.recordedAt = recordedAt;
   this.streamDelay = ReChat.defaultStreamDelay;
+};
+
+ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
+  var that = this;
+  this.bttvEmotes = {};
+
+  ['emotes', 'channels/' + encodeURIComponent(channel)].forEach(function(endpoint) {
+    $.getJSON('https://api.betterttv.net/2/' + endpoint).done(function(data) {
+      data.emotes.forEach(function(emote) {
+        that.bttvEmotes[emote.code] = {
+          restrictions: emote.restrictions,
+          code: emote.code,
+          id: emote.id,
+          '1x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','1x'),
+          '2x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','2x')
+        };
+      });
+    });
+  });
 };
 
 ReChat.Playback.prototype._prepareInterface = function() {
@@ -65,13 +88,13 @@ ReChat.Playback.prototype._prepareInterface = function() {
   toggleDelayAdjLink.css({'top':'6px'});
   toggleDelayAdjLink.attr({
 	  'id':'toggle_delay',
-	  'title':'Adjust Chat Delay'
+	  'title':'Chat Delay Setting'
 	  });
   header.append(toggleDelayAdjLink);
   
   //svg image icon for the toggle link ( used explicit type declaration because jquery has issues appending svg graphics normally)
   var toggleDelayAdjImg = $(document.createElementNS("http://www.w3.org/2000/svg","svg"));
-  toggleDelayAdjImg.addClass('svg-roomlist');
+  toggleDelayAdjImg.addClass('svg-gear');
   toggleDelayAdjImg.attr({
 	  'height':'16px',
 	  'version':'1.1',
@@ -86,7 +109,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
   var toggleDelayAdjPath = $(document.createElementNS("http://www.w3.org/2000/svg","path"));
   toggleDelayAdjPath.attr({
 	  'clip-rule':'evenodd',
-	  'd':'M1,13v-2h14v2H1z M1,5h13v2H1V5z M1,2h10v2H1V2z M12,10H1V8h11V10z',
+	  'd':'M15,7v2h-2.115c-0.125,0.615-0.354,1.215-0.713,1.758l1.484,1.484l-1.414,1.414l-1.484-1.484C10.215,12.531,9.615,12.76,9,12.885V15H7v-2.12c-0.614-0.126-1.21-0.356-1.751-0.714l-1.491,1.49l-1.414-1.414l1.491-1.49C3.477,10.211,3.247,9.613,3.12,9H1V7h2.116C3.24,6.384,3.469,5.785,3.829,5.242L2.343,3.757l1.414-1.414l1.485,1.485C5.785,3.469,6.384,3.24,7,3.115V1h2v2.12c0.613,0.126,1.211,0.356,1.752,0.714l1.49-1.491l1.414,1.414l-1.49,1.492C12.523,5.79,12.754,6.387,12.88,7H15z M8,6C6.896,6,6,6.896,6,8s0.896,2,2,2s2-0.896,2-2S9.104,6,8,6z',
 	  'fill-rule':'evenodd'
 	  });
   toggleDelayAdjImg.append(toggleDelayAdjPath);
@@ -104,85 +127,43 @@ ReChat.Playback.prototype._prepareInterface = function() {
   delayAdjustBar.css({
 	  'display':'block',
 	  'position':'relative',
-	  'background-color':'#f2f2f2'
+	  'background-color':'#f2f2f2',
+	  'height':'22px',
+	  'padding':'5px 0'
   	  });
   delayAdjustBar.attr('id','delay_adjust_bar');
   delayAdjustBar.hide();
   
   //handles toggling of the delay adjustment bar
   toggleDelayAdjLink.click(function() {
-  	delayAdjustBar.toggle( "slow", function() {});
+  	delayAdjustBar.toggle( "fast", function() {});
   });
   
-  //dropdown to select how many seconds the delay should be adjusted by when decrease or increase button is pressed
-  var adjustAmtSelector = $('<select>');
-  adjustAmtSelector.css({'background-color':'#f2f2f2'});
-  adjustAmtSelector.attr({
-	  'id':'adjust_amt_select',
-	  'title':'Adjustment Amount'
+  //slider to adjust chat delay
+  var delayRange = $('<input>');
+  delayRange.css({
+	  'width':'70%',
+	  'left':'5%',
+	  'position':'absolute'
   });
-  delayAdjustBar.append(adjustAmtSelector);
-  delayAdjustBar.append(' ');
+  delayRange.attr({
+	  'id':'delay_range',
+	  'type':'range',
+	  'min':'0',
+	  'max':'300',
+	  'step':'5',
+	  'value':ReChat.defaultStreamDelay,
+	  'title':'Delay: 0 - 5 minutes'
+  });
+  delayAdjustBar.append(delayRange);
   
-  //options for the adjustment amount selector; 1,5,10,30 or 60 seconds
-  var opt_1 = $('<option>');
-  opt_1.attr('value','1');
-  opt_1.text('1 second')
-  adjustAmtSelector.append(opt_1);
-  
-  var opt_5 = $('<option>');
-  opt_5.attr('value','5');
-  opt_5.text('5 seconds')
-  adjustAmtSelector.append(opt_5);
-  
-  var opt_10 = $('<option>');
-  opt_10.attr({'value':'10',
-	  'selected':'selected'
-	  });
-  opt_10.text('10 seconds')
-  adjustAmtSelector.append(opt_10);
-  
-  var opt_30 = $('<option>');
-  opt_30.attr('value','30');
-  opt_30.text('30 seconds')
-  adjustAmtSelector.append(opt_30);
-  
-  var opt_60 = $('<option>');
-  opt_60.attr('value','60');
-  opt_60.text('60 seconds')
-  adjustAmtSelector.append(opt_60);
-  
-  //decrease delay button
-  var leftArrowBtn = $('<button>');
-  leftArrowBtn.attr({
-	  'id':'left_arrow_button',
-	  'title':'Decrease Delay',
-	  'type':'button'
-	  });
-  leftArrowBtn.css({
-	  'width':'20',
-	  'height':'19',
-	  'text-align':'center'
-	  });
-  delayAdjustBar.append(leftArrowBtn);
-  delayAdjustBar.append(' ');
-  
-  //handles decreasing of chat delay
+  //handle change in slider value
   var that = this;
-  leftArrowBtn.click(function() {
-	  that._adjustStreamDelay( adjustAmtSelector.val() );
+  delayRange.change(function() {
+	  that._adjustStreamDelay( delayRange.val() );
   });
   
-  //image for decrease delay button
-  var leftArrowImg = $('<img>');
-  leftArrowImg.attr({
-	  'id':'left_arrow_img',
-	  'alt':'<<',
-	  'src':ReChat.getExtensionResourcePath('res/arrowleft.png')
-	  });
-  leftArrowBtn.append(leftArrowImg);
-  
-  //shows the total amount of delay that has been applied
+  //shows the current delay setting
   var currDelayDisplay = $('<input>');
   currDelayDisplay.attr({
 	  'id':'curr_delay_display',
@@ -190,43 +171,17 @@ ReChat.Playback.prototype._prepareInterface = function() {
 	  });
   currDelayDisplay.prop('readonly', true)
   currDelayDisplay.css({
-	  'width':'40px',
+	  'width':'15%',
+	  'right':'5%',
 	  'background-color':'#f2f2f2',
-	  'text-align':'center'
+	  'text-align':'center',
+	  'position':'absolute',
+	  'display':'inline-block'
 	  });
   delayAdjustBar.append(currDelayDisplay);
-  delayAdjustBar.append(' ');
   
   //initialize the display value
-  currDelayDisplay.val(this.streamDelay * -1);
-  
-  //increase delay button
-  var rightArrowBtn = $('<button>');
-  rightArrowBtn.attr({
-	  'id':'right_arrow_button',
-	  'title':'Increase Delay',
-	  'type':'button'
-	  });
-  rightArrowBtn.css({
-	  'width':'18',
-	  'height':'19',
-	  'text-align':'center'
-	  });
-  delayAdjustBar.append(rightArrowBtn);
-  
-  //handles increasing of chat delay
-  rightArrowBtn.click(function() {
-  	that._adjustStreamDelay( adjustAmtSelector.val() * -1 );
-  });
-  
-  //image for increase delay button
-  var rightArrowImg = $('<img>');
-  rightArrowImg.attr({
-	  'id':'right_arrow_img',
-	  'alt':'>>',
-	  'src':ReChat.getExtensionResourcePath('res/arrowright.png')
-	  });
-  rightArrowBtn.append(rightArrowImg);
+  currDelayDisplay.val(this._parseSecondsToMinutes(ReChat.defaultStreamDelay));
   
   containerEmber.append(delayAdjustBar);
 
@@ -534,48 +489,115 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
-  var escapeHelper = $('<div>'),
-      escapeAndLink = function(text) {
-        return ReChat.autolinker.link(escapeHelper.text(text).html());
-      };
-  if (!emotes) {
-    return escapeAndLink(text);
-  }
+ReChat.Playback.prototype._replaceTwitchEmoticonsByRanges = function(text, emotes) {
+  if (!emotes) return [ text ];
+
   var emotesToReplace = [],
       emotes = emotes.split('/');
+
   $.each(emotes, function(i, emoteDataRaw) {
     var emoteData = emoteDataRaw.split(':'),
         emoteId = emoteData[0],
         emoteRanges = emoteData[1].split(',');
+
     $.each(emoteRanges, function(j, emoteRange) {
       var emoteRangeParts = emoteRange.split('-'),
           emoteRangeBegin = parseInt(emoteRangeParts[0]),
           emoteRangeEnd = parseInt(emoteRangeParts[1]);
+
       emotesToReplace.push({ id: emoteId, begin: emoteRangeBegin, end: emoteRangeEnd });
     });
   });
+
   emotesToReplace.sort(function(x, y) {
-    return x.begin - y.begin;
+    return y.begin - x.begin;
   });
-  var offset = 0,
-      messageHtml = '';
-  $.each(emotesToReplace, function(i, emote) {
-    var emoteText = text.substring(emote.begin, emote.end + 1),
-        imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id,
-        image = $('<img>').attr({
-          src: imageBaseUrl + '/1.0',
-          srcset: imageBaseUrl + '/2.0 2x',
-          alt: emoteText,
-          title: emoteText
-        }).addClass('emoticon'),
-        imageHtml = image[0].outerHTML;
-    messageHtml += escapeAndLink(text.substring(offset, emote.begin));
-    messageHtml += imageHtml;
-    offset = emote.end + 1;
+
+  var messageParts = [];
+
+  emotesToReplace.forEach(function(emote) {
+    var emoteText = text.substring(emote.begin, emote.end + 1)
+
+    // Unshift the end of the message (that doesn't contain the emote)
+    messageParts.unshift(text.slice(emote.end + 1));
+
+    // Unshift the emote HTML (but not as a string to allow us to process links, escape html, and other emotes)
+    var imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id;
+    messageParts.unshift([
+      $('<img>').attr({
+        src: imageBaseUrl + '/1.0',
+        srcset: imageBaseUrl + '/2.0 2x',
+        alt: emoteText,
+        title: emoteText
+      }).addClass('emoticon')[0].outerHTML
+    ]);
+
+    // Splice the unparsed piece of the message
+    text = text.slice(0, emote.begin);
   });
-  messageHtml += escapeAndLink(text.substring(offset));
-  return messageHtml;
+
+  // Unshift the remaining part of the message (that contains no Twitch emotes)
+  messageParts.unshift(text);
+
+  return messageParts;
+};
+
+ReChat.Playback.prototype._replaceBTTVEmoticons = function(part) {
+  if (typeof part !== 'string') return part;
+
+  var codeWithoutSymbols = part.replace(/(^[~!@#$%\^&\*\(\)]+|[~!@#$%\^&\*\(\)]+$)/g, '');
+
+  var emote = null;
+  if (this.bttvEmotes.hasOwnProperty(part)) {
+    emote = this.bttvEmotes[part];
+  } else if (this.bttvEmotes.hasOwnProperty(codeWithoutSymbols)) {
+    emote = this.bttvEmotes[codeWithoutSymbols];
+  } else {
+    return part;
+  }
+
+  return [
+    part.replace(emote.code, $('<img>').attr({
+      src: emote['1x'],
+      srcset: emote['2x'] + ' 2x',
+      alt: emote.code,
+      title: emote.code
+    }).addClass('emoticon')[0].outerHTML)
+  ];
+};
+
+ReChat.Playback.prototype._escapeAndLink = function(part) {
+  if (typeof part !== 'string') return part;
+
+  return ReChat.autolinker.link(part.replace(/</g,'&lt;').replace(/>/g, '&gt;'));
+};
+
+ReChat.Playback.prototype._textFormatter = function(text, emotes) {
+  var messageParts = this._replaceTwitchEmoticonsByRanges(text, emotes);
+
+  // further split parts by spaces
+  var parts = [];
+  messageParts.forEach(function(part) {
+    if(Array.isArray(part)) return parts.push(part);
+
+    parts = parts.concat(part.split(' '));
+  });
+  messageParts = parts;
+
+  // handles third party emotes, escaping, and linkification
+  for(var i = 0; i < messageParts.length; i++) {
+    var part = messageParts[i];
+
+    if (this.bttvEmotes && this.bttvEmotes.length) {
+      part = this._replaceBTTVEmoticons(part);
+    }
+    part = this._escapeAndLink(part);
+
+    part = Array.isArray(part) ? part[0] : part;
+    messageParts[i] = part;
+  }
+
+  return messageParts.join(' ');
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
@@ -599,7 +621,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
     colon.text(':');
   }
   from.text(messageData.from.replace('\\s', ' '));
-  var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
+  var messageHtml = this._textFormatter(messageText, messageData.emotes);
   message.html(messageHtml);
   line.append(from).append(colon).append(' ').append(message);
   return line;
@@ -669,11 +691,23 @@ ReChat.Playback.prototype.stop = function() {
   }
 };
 
-//this function updates the stream delay amount; a positive 'adjustment' will artificially increase the video time thus reducing the chat delay and vice versa
+//this function updates the stream delay amount
 ReChat.Playback.prototype._adjustStreamDelay = function( adjustment ) {
-  this.streamDelay = parseInt(this.streamDelay) + parseInt(adjustment);
-  //flip the sign for display as it is more intuitive to show a numeric decrease when the chat delay is being decreased and vice versa
-  $('#curr_delay_display').val(this.streamDelay * -1);
+  var newDelay = parseInt(adjustment);
+  //update the delay
+  this.streamDelay = newDelay;  
+  //update the delay display
+  $('#curr_delay_display').val( this._parseSecondsToMinutes(newDelay) );
+};
+
+//this function converts a number of seconds to minutes and seconds representation
+ReChat.Playback.prototype._parseSecondsToMinutes = function( value ) {
+  var numValue = parseInt(value);
+  var minutes = Math.floor(numValue / 60);
+  var seconds = numValue - (minutes * 60);
+  if( minutes < 10  ){ minutes = '0' + minutes; }
+  if( seconds < 10  ){ seconds = '0' + seconds; }
+  return minutes + ':' + seconds;
 };
 
 $(document).ready(function() {
@@ -705,8 +739,15 @@ $(document).ready(function() {
           if (currentUrl != document.location.href) {
             return;
           }
+
           var recordedAt = new Date(Date.parse(result.recorded_at));
           currentPlayback = new ReChat.Playback(videoId, recordedAt);
+
+          if (ReChat.BTTVDetected()) {
+            console.info('ReChat: BTTV detected, loading BTTV emotes...');
+            currentPlayback.loadBTTVEmotes(result.channel.name);
+          }
+
           currentPlayback.start();
         });
 

@@ -30,9 +30,7 @@
   ],
 
   "web_accessible_resources": [
-    "js/injected.js",
-    "res/arrowleft.png",
-    "res/arrowright.png"
+    "js/injected.js"
   ]
 
 }

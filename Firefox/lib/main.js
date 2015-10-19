@@ -5,9 +5,7 @@ var pageMod = require('sdk/page-mod'),
     localFiles = {
       'res/sad.png': data.url('sad.png'),
       'res/spinner.gif': data.url('spinner.gif'),
-      'js/injected.js': data.url('injected.js'),
-      'res/arrowleft.png': data.url('arrowleft.png'),
-      'res/arrowright.png': data.url('arrowright.png')
+      'js/injected.js': data.url('injected.js')
     };
 
 pageMod.PageMod({

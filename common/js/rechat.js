@@ -488,7 +488,7 @@ ReChat.Playback.prototype._textFormatter = function(text, emotes) {
   for(var i = 0; i < messageParts.length; i++) {
     var part = messageParts[i];
 
-    if (this.bttvEmotes && this.bttvEmotes.length) {
+    if (this.bttvEmotes) {
       part = this._replaceBTTVEmoticons(part);
     }
     part = this._escapeAndLink(part);

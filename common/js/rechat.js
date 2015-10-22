@@ -602,10 +602,10 @@ $(document).ready(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
       var flashVars = $('param[name="flashvars"]'),
-          html5Player = $('div.player.player-isvod'),
+          playerContainer = $('div.player[data-video]'),
           videoId = false;
-      if (html5Player.length) {
-        videoId = html5Player.attr('data-video');
+      if (playerContainer.length) {
+        videoId = playerContainer.attr('data-video');
       } else if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
         var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {

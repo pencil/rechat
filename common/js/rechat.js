@@ -335,10 +335,11 @@ ReChat.Playback.prototype._replay = function() {
           messageDate = new Date(messageData.recieved_at);
       if (messageDate <= currentAbsoluteVideoTime) {
         this._cachedMessages.shift();
-        delete this._timeouts[messageData.from];
-        if (messageData.from == 'twitchnotify') {
+        messageData.username = messageData.from.replace('\\s', '').toLowerCase();
+        delete this._timeouts[messageData.username];
+        if (messageData.username == 'twitchnotify') {
           var formattedMessage = this._formatSystemMessage(messageData);
-        } else if (messageData.from == 'jtv') {
+        } else if (messageData.username == 'jtv') {
           var formattedMessage = this._formatJtvMessage(messageData);
         } else {
           var formattedMessage = this._formatChatMessage(messageData);
@@ -500,10 +501,10 @@ ReChat.Playback.prototype._textFormatter = function(text, emotes) {
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
-  var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
-  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
+  var userColor = this._colorForNickname(messageData.username, messageData.usercolor);
+  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.username);
   // Add data attributes
-  line.attr('data-sender', messageData.from);
+  line.attr('data-sender', messageData.username);
   line.attr('data-room', messageData.to.substring(1));
   // From line
   var from = $('<span>').addClass('from').css({

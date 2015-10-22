@@ -468,7 +468,7 @@ ReChat.Playback.prototype._replaceBTTVEmoticons = function(part) {
 ReChat.Playback.prototype._escapeAndLink = function(part) {
   if (typeof part !== 'string') return part;
 
-  return ReChat.autolinker.link(part.replace(/</g,'&lt;').replace(/>/g, '&gt;'));
+  return ReChat.autolinker.link(part.replace(/&/g, '&amp;').replace(/</g,'&lt;').replace(/>/g, '&gt;'));
 };
 
 ReChat.Playback.prototype._textFormatter = function(text, emotes) {

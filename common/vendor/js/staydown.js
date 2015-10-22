@@ -25,6 +25,11 @@ function StayDown(opts) {
         staydown.checkdown();
     });
 
+    this.lock = function() {
+      staydown.intend_down = true;
+      staydown.emit('lock');
+    }
+
     this.target.addEventListener('scroll', function (event) {
         if (staydown.userScroll) {
             if (staydown.intend_down && !staydown.isdown()) {

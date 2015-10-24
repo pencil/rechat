@@ -26,10 +26,33 @@ this.ReChat = $.extend({
   }
 }, this.ReChat || {});
 
+ReChat.BTTVDetected = function() {
+  return $('script[src*="betterttv"]').length != 0;
+}
+
 ReChat.Playback = function(videoId, recordedAt) {
   this.videoId = videoId;
   this.recordedAt = recordedAt;
   this.streamDelay = ReChat.defaultStreamDelay;
+};
+
+ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
+  var that = this;
+  this.bttvEmotes = {};
+
+  ['emotes', 'channels/' + encodeURIComponent(channel)].forEach(function(endpoint) {
+    $.getJSON('https://api.betterttv.net/2/' + endpoint).done(function(data) {
+      data.emotes.forEach(function(emote) {
+        that.bttvEmotes[emote.code] = {
+          restrictions: emote.restrictions,
+          code: emote.code,
+          id: emote.id,
+          '1x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','1x'),
+          '2x': data.urlTemplate.replace('{{id}}', emote.id).replace('{{image}}','2x')
+        };
+      });
+    });
+  });
 };
 
 ReChat.Playback.prototype._prepareInterface = function() {
@@ -481,10 +504,11 @@ ReChat.Playback.prototype._replay = function() {
           messageDate = new Date(messageData.recieved_at);
       if (messageDate <= currentAbsoluteVideoTime) {
         this._cachedMessages.shift();
-        delete this._timeouts[messageData.from];
-        if (messageData.from == 'twitchnotify') {
+        messageData.username = messageData.from.replace('\\s', '').toLowerCase();
+        delete this._timeouts[messageData.username];
+        if (messageData.username == 'twitchnotify') {
           var formattedMessage = this._formatSystemMessage(messageData);
-        } else if (messageData.from == 'jtv') {
+        } else if (messageData.username == 'jtv') {
           var formattedMessage = this._formatJtvMessage(messageData);
         } else {
           var formattedMessage = this._formatChatMessage(messageData);
@@ -534,55 +558,122 @@ ReChat.Playback.prototype._generateColorForNickname = function(nickname) {
   return ReChat.nicknameColors[hash % (ReChat.nicknameColors.length - 1)];
 };
 
-ReChat.Playback.prototype._replaceEmoticonsByRanges = function(text, emotes) {
-  var escapeHelper = $('<div>'),
-      escapeAndLink = function(text) {
-        return ReChat.autolinker.link(escapeHelper.text(text).html());
-      };
-  if (!emotes) {
-    return escapeAndLink(text);
-  }
+ReChat.Playback.prototype._replaceTwitchEmoticonsByRanges = function(text, emotes) {
+  if (!emotes) return [ text ];
+
   var emotesToReplace = [],
       emotes = emotes.split('/');
+
   $.each(emotes, function(i, emoteDataRaw) {
     var emoteData = emoteDataRaw.split(':'),
         emoteId = emoteData[0],
         emoteRanges = emoteData[1].split(',');
+
     $.each(emoteRanges, function(j, emoteRange) {
       var emoteRangeParts = emoteRange.split('-'),
           emoteRangeBegin = parseInt(emoteRangeParts[0]),
           emoteRangeEnd = parseInt(emoteRangeParts[1]);
+
       emotesToReplace.push({ id: emoteId, begin: emoteRangeBegin, end: emoteRangeEnd });
     });
   });
+
   emotesToReplace.sort(function(x, y) {
-    return x.begin - y.begin;
+    return y.begin - x.begin;
   });
-  var offset = 0,
-      messageHtml = '';
-  $.each(emotesToReplace, function(i, emote) {
-    var emoteText = text.substring(emote.begin, emote.end + 1),
-        imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id,
-        image = $('<img>').attr({
-          src: imageBaseUrl + '/1.0',
-          srcset: imageBaseUrl + '/2.0 2x',
-          alt: emoteText,
-          title: emoteText
-        }).addClass('emoticon'),
-        imageHtml = image[0].outerHTML;
-    messageHtml += escapeAndLink(text.substring(offset, emote.begin));
-    messageHtml += imageHtml;
-    offset = emote.end + 1;
+
+  var messageParts = [];
+
+  emotesToReplace.forEach(function(emote) {
+    var emoteText = text.substring(emote.begin, emote.end + 1)
+
+    // Unshift the end of the message (that doesn't contain the emote)
+    messageParts.unshift(text.slice(emote.end + 1));
+
+    // Unshift the emote HTML (but not as a string to allow us to process links, escape html, and other emotes)
+    var imageBaseUrl = '//static-cdn.jtvnw.net/emoticons/v1/' + emote.id;
+    messageParts.unshift([
+      $('<img>').attr({
+        src: imageBaseUrl + '/1.0',
+        srcset: imageBaseUrl + '/2.0 2x',
+        alt: emoteText,
+        title: emoteText
+      }).addClass('emoticon')[0].outerHTML
+    ]);
+
+    // Splice the unparsed piece of the message
+    text = text.slice(0, emote.begin);
   });
-  messageHtml += escapeAndLink(text.substring(offset));
-  return messageHtml;
+
+  // Unshift the remaining part of the message (that contains no Twitch emotes)
+  messageParts.unshift(text);
+
+  return messageParts;
+};
+
+ReChat.Playback.prototype._replaceBTTVEmoticons = function(part) {
+  if (typeof part !== 'string') return part;
+
+  var codeWithoutSymbols = part.replace(/(^[~!@#$%\^&\*\(\)]+|[~!@#$%\^&\*\(\)]+$)/g, '');
+
+  var emote = null;
+  if (this.bttvEmotes.hasOwnProperty(part)) {
+    emote = this.bttvEmotes[part];
+  } else if (this.bttvEmotes.hasOwnProperty(codeWithoutSymbols)) {
+    emote = this.bttvEmotes[codeWithoutSymbols];
+  } else {
+    return part;
+  }
+
+  return [
+    part.replace(emote.code, $('<img>').attr({
+      src: emote['1x'],
+      srcset: emote['2x'] + ' 2x',
+      alt: emote.code,
+      title: emote.code
+    }).addClass('emoticon')[0].outerHTML)
+  ];
+};
+
+ReChat.Playback.prototype._escapeAndLink = function(part) {
+  if (typeof part !== 'string') return part;
+
+  return ReChat.autolinker.link(part.replace(/&/g, '&amp;').replace(/</g,'&lt;').replace(/>/g, '&gt;'));
+};
+
+ReChat.Playback.prototype._textFormatter = function(text, emotes) {
+  var messageParts = this._replaceTwitchEmoticonsByRanges(text, emotes);
+
+  // further split parts by spaces
+  var parts = [];
+  messageParts.forEach(function(part) {
+    if(Array.isArray(part)) return parts.push(part);
+
+    parts = parts.concat(part.split(' '));
+  });
+  messageParts = parts;
+
+  // handles third party emotes, escaping, and linkification
+  for(var i = 0; i < messageParts.length; i++) {
+    var part = messageParts[i];
+
+    if (this.bttvEmotes) {
+      part = this._replaceBTTVEmoticons(part);
+    }
+    part = this._escapeAndLink(part);
+
+    part = Array.isArray(part) ? part[0] : part;
+    messageParts[i] = part;
+  }
+
+  return messageParts.join(' ');
 };
 
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
-  var userColor = this._colorForNickname(messageData.from, messageData.usercolor);
-  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.from);
+  var userColor = this._colorForNickname(messageData.username, messageData.usercolor);
+  var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.username);
   // Add data attributes
-  line.attr('data-sender', messageData.from);
+  line.attr('data-sender', messageData.username);
   line.attr('data-room', messageData.to.substring(1));
   // From line
   var from = $('<span>').addClass('from').css({
@@ -599,7 +690,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
     colon.text(':');
   }
   from.text(messageData.from.replace('\\s', ' '));
-  var messageHtml = this._replaceEmoticonsByRanges(messageText, messageData.emotes);
+  var messageHtml = this._textFormatter(messageText, messageData.emotes);
   message.html(messageHtml);
   line.append(from).append(colon).append(' ').append(message);
   return line;
@@ -688,10 +779,10 @@ $(document).ready(function() {
     var currentUrl = document.location.href;
     if (lastUrl === false) {
       var flashVars = $('param[name="flashvars"]'),
-          html5Player = $('div.player.player-isvod'),
+          playerContainer = $('div.player[data-video]'),
           videoId = false;
-      if (html5Player.length) {
-        videoId = html5Player.attr('data-video');
+      if (playerContainer.length) {
+        videoId = playerContainer.attr('data-video');
       } else if (flashVars.length && $('div.archive_info_title').length && $('div#player object').length) {
         var match = /videoId=([a-z0-9]+)/.exec(flashVars.attr('value'));
         if (match != null) {
@@ -705,8 +796,15 @@ $(document).ready(function() {
           if (currentUrl != document.location.href) {
             return;
           }
+
           var recordedAt = new Date(Date.parse(result.recorded_at));
           currentPlayback = new ReChat.Playback(videoId, recordedAt);
+
+          if (ReChat.BTTVDetected()) {
+            console.info('ReChat: BTTV detected, loading BTTV emotes...');
+            currentPlayback.loadBTTVEmotes(result.channel.name);
+          }
+
           currentPlayback.start();
         });
 

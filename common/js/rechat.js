@@ -154,7 +154,6 @@ ReChat.Playback.prototype._prepareInterface = function() {
 	  'min':'0',
 	  'max':'300',
 	  'step':'5',
-	  'value':ReChat.defaultStreamDelay,
 	  'title':'Delay: 0 - 5 minutes'
   });
   delayAdjustBar.append(delayRange);
@@ -186,9 +185,11 @@ ReChat.Playback.prototype._prepareInterface = function() {
 	  });
   delayAdjustBar.append(currDelayDisplay);
   
-  //initialize the display value
+  //initialize the delay value
   ReChat.channelName = this._getChannelName();
   var initialDelay = this._getLocalValue( ReChat.localStorageKey.concat(ReChat.channelName), ReChat.defaultStreamDelay );
+  this._adjustStreamDelay(initialDelay);
+  delayRange.val(initialDelay);
   currDelayDisplay.text(this._parseSecondsToMinutes(initialDelay));
   
   containerEmber.append(delayAdjustBar);

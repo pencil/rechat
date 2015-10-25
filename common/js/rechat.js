@@ -5,6 +5,8 @@ this.ReChat = $.extend({
   loadingDelay: 3000,
   nicknameColors: Please.make_color({ colors_returned: 50, saturation: 0.7 }),
   defaultStreamDelay: 17,
+  localStorageKey: 'ReChat-',
+  channelName: '',
 
   chunkTimeLength: 30,
   chunkPreloadTime: 10,
@@ -81,12 +83,119 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'box-shadow': 'inset 0 -1px 0 0 rgba(0,0,0,0.2)'
   });
   header.addClass('chat-header');
-  header.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
+  
+  //this link will toggle displaying the delay adjustment bar
+  var toggleDelayAdjLink = $('<a>');
+  toggleDelayAdjLink.addClass('button glyph-only left tooltip');
+  toggleDelayAdjLink.css({'top':'6px'});
+  toggleDelayAdjLink.attr({
+	  'id':'toggle_delay',
+	  'title':'Chat Delay Setting'
+	  });
+  header.append(toggleDelayAdjLink);
+  
+  //svg image icon for the toggle link ( used explicit type declaration because jquery has issues appending svg graphics normally)
+  var toggleDelayAdjImg = $(document.createElementNS("http://www.w3.org/2000/svg","svg"));
+  toggleDelayAdjImg.addClass('svg-gear');
+  toggleDelayAdjImg.attr({
+	  'height':'16px',
+	  'version':'1.1',
+	  'viewbox':'0 0 16 16',
+	  'width':'16px',
+	  'x':'0px',
+	  'y':'0px'
+	  });
+  toggleDelayAdjLink.append(toggleDelayAdjImg);
+  
+  //path element to draw the actual svg content
+  var toggleDelayAdjPath = $(document.createElementNS("http://www.w3.org/2000/svg","path"));
+  toggleDelayAdjPath.attr({
+	  'clip-rule':'evenodd',
+	  'd':'M15,7v2h-2.115c-0.125,0.615-0.354,1.215-0.713,1.758l1.484,1.484l-1.414,1.414l-1.484-1.484C10.215,12.531,9.615,12.76,9,12.885V15H7v-2.12c-0.614-0.126-1.21-0.356-1.751-0.714l-1.491,1.49l-1.414-1.414l1.491-1.49C3.477,10.211,3.247,9.613,3.12,9H1V7h2.116C3.24,6.384,3.469,5.785,3.829,5.242L2.343,3.757l1.414-1.414l1.485,1.485C5.785,3.469,6.384,3.24,7,3.115V1h2v2.12c0.613,0.126,1.211,0.356,1.752,0.714l1.49-1.491l1.414,1.414l-1.49,1.492C12.523,5.79,12.754,6.387,12.88,7H15z M8,6C6.896,6,6,6.896,6,8s0.896,2,2,2s2-0.896,2-2S9.104,6,8,6z',
+	  'fill-rule':'evenodd'
+	  });
+  toggleDelayAdjImg.append(toggleDelayAdjPath);
+  
+  var headerTitle = $('<p>');
+  headerTitle.addClass('room-title');
+  headerTitle.text('ReChat for Twitch™ ' + ReChat.getExtensionVersion());
+  header.append(headerTitle);
+  
   containerEmber.append(header);
+  
+  //delay adjustment bar
+  var delayAdjustBar = $('<div>');
+  delayAdjustBar.addClass('chat-header');
+  delayAdjustBar.css({
+	  'display':'block',
+	  'position':'relative',
+	  'background-color':'#f2f2f2',
+	  'height':'22px',
+	  'padding':'5px 0'
+  	  });
+  delayAdjustBar.attr('id','delay_adjust_bar');
+  delayAdjustBar.hide();
+  
+  //handles toggling of the delay adjustment bar
+  toggleDelayAdjLink.click(function() {
+  	delayAdjustBar.toggle( "fast", function() {});
+  });
+  
+  //slider to adjust chat delay
+  var delayRange = $('<input>');
+  delayRange.css({
+	  'width':'70%',
+	  'left':'5%',
+	  'position':'absolute'
+  });
+  delayRange.attr({
+	  'id':'delay_range',
+	  'type':'range',
+	  'min':'0',
+	  'max':'300',
+	  'step':'5',
+	  'value':ReChat.defaultStreamDelay,
+	  'title':'Delay: 0 - 5 minutes'
+  });
+  delayAdjustBar.append(delayRange);
+  
+  //handle change in slider value
+  var that = this;
+  delayRange.change(function() {
+	  that._adjustStreamDelay( delayRange.val() );
+  });
+  
+  //shows the current delay setting
+  var currDelayDisplay = $('<div>');
+  currDelayDisplay.attr({
+	  'id':'curr_delay_display',
+	  'title':'Current Delay'
+	  });
+  currDelayDisplay.prop('readonly', true)
+  currDelayDisplay.css({
+	  'width':'15%',
+	  'height':'18px',
+	  'line-height':'18px',
+	  'right':'5%',
+	  'vertical-align':'middle',
+	  'text-align':'center',
+	  'position':'absolute',
+	  'display':'inline-block',
+	  'border':'1px solid #e3ddd8',
+	  'border-radius':'5px'
+	  });
+  delayAdjustBar.append(currDelayDisplay);
+  
+  //initialize the display value
+  ReChat.channelName = this._getChannelName();
+  var initialDelay = this._getLocalValue( ReChat.localStorageKey.concat(ReChat.channelName), ReChat.defaultStreamDelay );
+  currDelayDisplay.text(this._parseSecondsToMinutes(initialDelay));
+  
+  containerEmber.append(delayAdjustBar);
 
   var statusMessage = $('<div>').css({
     'position': 'absolute',
-    'z-index': 1,
+    'z-index': 6,
     'text-align': 'center',
     'top': '40px',
     'left': 0,
@@ -589,6 +698,53 @@ ReChat.Playback.prototype.stop = function() {
   if (this._staydown) {
     this._staydown.interval = 10000000; // only what to "stop" it
   }
+};
+
+//this function updates the stream delay amount
+ReChat.Playback.prototype._adjustStreamDelay = function( adjustment ) {
+  var newDelay = parseInt(adjustment);
+  //update the delay
+  this.streamDelay = newDelay;  
+  //update the delay display
+  $('#curr_delay_display').text( this._parseSecondsToMinutes(newDelay) );
+  //update stored local setting
+  if( ReChat.channelName !== '' ){ this._setLocalValue( ReChat.localStorageKey.concat(ReChat.channelName), newDelay); }
+};
+
+//this function retrieves the current channel name
+ReChat.Playback.prototype._getChannelName = function() {
+	var channelName = '';
+	try{
+		channelName = $('.channel-name').first().text().trim();
+	}catch(err){ console.log('channel name not found: ' + err.message); }
+	return channelName;
+};
+
+//this function retrieves data from local storage
+ReChat.Playback.prototype._getLocalValue = function( key, defaultValue ) {
+	var foundValue = defaultValue;
+	try{
+		var fromStorage = localStorage.getItem( key );
+		if( fromStorage ){ foundValue = fromStorage; }
+	}catch(err){ console.log(err.message); }
+	return foundValue;
+};
+
+//this function puts data into local storage
+ReChat.Playback.prototype._setLocalValue = function( key, value ) {
+	try{
+		localStorage.setItem( key, value );
+	}catch(err){ console.log(err.message); }
+};
+
+//this function converts a number of seconds to minutes and seconds representation
+ReChat.Playback.prototype._parseSecondsToMinutes = function( value ) {
+  var numValue = parseInt(value);
+  var minutes = Math.floor(numValue / 60);
+  var seconds = numValue - (minutes * 60);
+  if( minutes < 10  ){ minutes = '0' + minutes; }
+  if( seconds < 10  ){ seconds = '0' + seconds; }
+  return minutes + ':' + seconds;
 };
 
 $(document).ready(function() {

@@ -27,11 +27,11 @@ this.ReChat = $.extend({
 }, this.ReChat || {});
 
 ReChat.EmberSettings = function() {
-  if ( localStorage.hasOwnProperty('chatSettings') ) {
-    try {
+  try {
+    if ( localStorage.hasOwnProperty('chatSettings') ) {
       return JSON.parse(localStorage.chatSettings);
-    } catch(err) { }
-  }
+    }
+  } catch(err) { }
 
   return {showTimestamps: false, darkMode: false};
 }

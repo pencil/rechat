@@ -5,7 +5,7 @@
 	<key>Author</key>
 	<string>Nils Caspar</string>
 	<key>Builder Version</key>
-	<string>11601.2.7.2</string>
+	<string>11601.3.6</string>
 	<key>CFBundleDisplayName</key>
 	<string>ReChat for Twitch™</string>
 	<key>CFBundleIdentifier</key>
@@ -13,9 +13,9 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.18.1</string>
+	<string>0.18.2</string>
 	<key>CFBundleVersion</key>
-	<string>0.18.1</string>
+	<string>0.18.2</string>
 	<key>Chrome</key>
 	<dict>
 		<key>Global Page</key>

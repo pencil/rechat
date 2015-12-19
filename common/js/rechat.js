@@ -256,11 +256,16 @@ ReChat.Playback.prototype._autoPopulateCache = function(delayLoading) {
 };
 
 ReChat.Playback.prototype._showStatusMessage = function(message) {
+  if (this._lastStatusMessage == message) {
+    return;
+  }
+  this._lastStatusMessage = message;
   this._statusMessageContainer.text(message);
   this._statusMessageContainer.show();
 };
 
 ReChat.Playback.prototype._hideStatusMessage = function() {
+  this._lastStatusMessage = null;
   this._statusMessageContainer.hide();
 };
 

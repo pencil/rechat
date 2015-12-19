@@ -541,6 +541,9 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
       case "staff":
         badgeContent.addClass('staff').prop('title', 'Twitch Staff');
         break;
+      default:
+        console.info('ReChat: Unknown badge ' + messageData.usertype);
+        break;
     }
     badges.append(badgeContent).append(' ');
   }

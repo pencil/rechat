@@ -74,7 +74,7 @@ ReChat.Playback.prototype._prepareInterface = function() {
     'display': 'block',
     'position': 'relative',
     'top': '0px',
-    'height': '20px',
+    'height': '40px',
     'padding': '10px 0',
     'line-height': '20px',
     'text-align': 'center',

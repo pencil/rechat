@@ -30,17 +30,18 @@ ReChat.BTTVDetected = function() {
   return $('script[src*="betterttv"]').length != 0;
 }
 
-ReChat.Playback = function(videoId, recordedAt) {
+ReChat.Playback = function(channelName, videoId, recordedAt) {
+  this.channelName = channelName;
   this.videoId = videoId;
   this.recordedAt = recordedAt;
   this.streamDelay = ReChat.defaultStreamDelay;
 };
 
-ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
+ReChat.Playback.prototype.loadBTTVEmotes = function() {
   var that = this;
   this.bttvEmotes = {};
 
-  ['emotes', 'channels/' + encodeURIComponent(channel)].forEach(function(endpoint) {
+  ['emotes', 'channels/' + encodeURIComponent(this.channelName)].forEach(function(endpoint) {
     $.getJSON('https://api.betterttv.net/2/' + endpoint).done(function(data) {
       data.emotes.forEach(function(emote) {
         that.bttvEmotes[emote.code] = {
@@ -58,9 +59,7 @@ ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
 
-  this._channelName = $(location).prop('pathname').split('/')[1];
-  this._subscriberUrl = null;
-  this._getSubscriberUrl();
+  this._loadSubscriberBadge();
 
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
@@ -519,7 +518,7 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
 };
 
 ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
-  if (messageData.username.toLowerCase() == this._channelName) {
+  if (messageData.username.toLowerCase() == this.channelName) {
     var badgeContent = this._buildBadge().addClass('broadcaster').prop('title', 'Broadcaster');
     badges.append(badgeContent).append(' ');
   }
@@ -545,10 +544,10 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
     var badgeContent = this._buildBadge().addClass('turbo').prop('title', 'Twitch Turbo');
     badges.append(badgeContent).append(' ');
   }
-  if (messageData.subscriber && this._subscriberUrl != null) {
+  if (messageData.subscriber && this.subscriberBadge) {
     var badgeContent = this._buildBadge().addClass('subscriber')
                                          .prop('title', 'Subscriber')
-                                         .css('background-image', 'url(' + this._subscriberUrl + ')');
+                                         .css('background-image', 'url(' + this.subscriberBadge + ')');
     badges.append(badgeContent).append(' ');
   }
 }
@@ -594,19 +593,19 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
   return this._formatSystemMessage($.extend(messageData, { message: message }), classification);
 };
 
-ReChat.Playback.prototype._getSubscriberUrl = function() {
+ReChat.Playback.prototype._loadSubscriberBadge = function() {
   var that = this;
-  ReChat.get('https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
+  ReChat.get('https://api.twitch.tv/kraken/chat/' + this.channelName + '/badges',
     {},
     function(data) {
-      try {
-        that._subscriberUrl = data['subscriber']['image'];
-      } catch (err) {
-        that._subscriberUrl = null;
+      if (!data.subscriber || !data.subscriber.image) {
+        console.info('ReChat: No subscriber badge found');
+        return;
       }
+      that.subscriberBadge = data.subscriber.image;
     },
     function(err) {
-      console.log('Error parsing subscriber badge');
+      console.info('ReChat: Error loading subscriber badge', err);
     }
   );
 };
@@ -634,7 +633,7 @@ ReChat.Playback.prototype.stop = function() {
   }
 
   if (this._staydown) {
-    this._staydown.interval = 10000000; // only what to "stop" it
+    this._staydown.interval = 10000000; // only way to "stop" it
   }
 };
 
@@ -669,11 +668,11 @@ $(document).ready(function() {
           }
 
           var recordedAt = new Date(Date.parse(result.recorded_at));
-          currentPlayback = new ReChat.Playback(videoId, recordedAt);
+          currentPlayback = new ReChat.Playback(result.channel.name, videoId, recordedAt);
 
           if (ReChat.BTTVDetected()) {
             console.info('ReChat: BTTV detected, loading BTTV emotes...');
-            currentPlayback.loadBTTVEmotes(result.channel.name);
+            currentPlayback.loadBTTVEmotes();
           }
 
           currentPlayback.start();

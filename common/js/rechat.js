@@ -58,6 +58,10 @@ ReChat.Playback.prototype.loadBTTVEmotes = function(channel) {
 ReChat.Playback.prototype._prepareInterface = function() {
   var that = this;
 
+  this._channelName = $(location).prop('pathname').split('/')[1];
+  this._subscriberUrl = null;
+  this._getSubscriberUrl();
+
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
 
@@ -486,9 +490,12 @@ ReChat.Playback.prototype._textFormatter = function(text, emotes) {
 ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   var userColor = this._colorForNickname(messageData.username, messageData.usercolor);
   var line = $('<div>').addClass('chat-line rechat-chat-line rechat-user-' + messageData.username);
+  var badges = $('<span>').addClass('float-left').addClass('badges');
   // Add data attributes
   line.attr('data-sender', messageData.username);
   line.attr('data-room', messageData.to.substring(1));
+  // Apply possible sub/turbo/usertype/broadcaster badges to message
+  this._applyMessageBadges(messageData, badges);
   // From line
   var from = $('<span>').addClass('from').css({
         'color': userColor,
@@ -503,11 +510,51 @@ ReChat.Playback.prototype._formatChatMessage = function(messageData) {
   } else {
     colon.text(':');
   }
+
   from.text(messageData.from.replace('\\s', ' '));
   var messageHtml = this._textFormatter(messageText, messageData.emotes);
   message.html(messageHtml);
-  line.append(from).append(colon).append(' ').append(message);
+  line.append(badges).append(from).append(colon).append(' ').append(message);
   return line;
+};
+
+ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
+  if (messageData.username.toLowerCase() == this._channelName) {
+    var badgeContent = this._buildBadge().addClass('broadcaster').prop('title', 'Broadcaster');
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.usertype != null) {
+    var badgeContent = this._buildBadge();
+    switch (messageData.usertype) {
+      case "mod":
+        badgeContent.addClass('moderator').prop('title', 'Moderator');
+        break;
+      case "global_mod":
+        badgeContent.addClass('global-moderator').prop('title', 'Global Moderator');
+        break;
+      case "admin":
+        badgeContent.addClass('admin').prop('title', 'Twitch Admin');
+        break;
+      case "staff":
+        badgeContent.addClass('staff').prop('title', 'Twitch Staff');
+        break;
+    }
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.turbo) {
+    var badgeContent = this._buildBadge().addClass('turbo').prop('title', 'Twitch Turbo');
+    badges.append(badgeContent).append(' ');
+  }
+  if (messageData.subscriber && this._subscriberUrl != null) {
+    var badgeContent = this._buildBadge().addClass('subscriber')
+                                         .prop('title', 'Subscriber')
+                                         .css('background-image', 'url(' + this._subscriberUrl + ')');
+    badges.append(badgeContent).append(' ');
+  }
+}
+
+ReChat.Playback.prototype._buildBadge = function() {
+  return $('<div>').addClass('float-left').addClass('badge');
 };
 
 ReChat.Playback.prototype._formatSystemMessage = function(messageData, classification) {
@@ -545,6 +592,23 @@ ReChat.Playback.prototype._formatJtvMessage = function(messageData) {
     return null;
   }
   return this._formatSystemMessage($.extend(messageData, { message: message }), classification);
+};
+
+ReChat.Playback.prototype._getSubscriberUrl = function() {
+  var that = this;
+  ReChat.get('https://api.twitch.tv/kraken/chat/' + this._channelName + '/badges',
+    {},
+    function(data) {
+      try {
+        that._subscriberUrl = data['subscriber']['image'];
+      } catch (err) {
+        that._subscriberUrl = null;
+      }
+    },
+    function(err) {
+      console.log('Error parsing subscriber badge');
+    }
+  );
 };
 
 ReChat.Playback.prototype.start = function() {

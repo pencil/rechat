@@ -526,8 +526,7 @@ ReChat.Playback.prototype._applyMessageBadges = function(messageData, badges) {
   if (messageData.username.toLowerCase() == this.channelName) {
     var badgeContent = this._buildBadge().addClass('broadcaster').prop('title', 'Broadcaster');
     badges.append(badgeContent).append(' ');
-  }
-  if (messageData.usertype != null) {
+  } else if (messageData.usertype != null) {
     var badgeContent = this._buildBadge();
     switch (messageData.usertype) {
       case "mod":

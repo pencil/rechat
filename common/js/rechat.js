@@ -1,6 +1,6 @@
 this.ReChat = $.extend({
   // Settings:
-  searchBaseUrl: 'http://search.rechat.org/videos/',
+  searchBaseUrl: 'https://search.rechat.org/videos/',
   chatDisplayLimit: 1000,
   loadingDelay: 3000,
   nicknameColors: Please.make_color({ colors_returned: 50, saturation: 0.7 }),

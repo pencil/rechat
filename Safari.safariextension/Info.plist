@@ -38,6 +38,7 @@
 		<key>Whitelist</key>
 		<array>
 			<string>http://www.twitch.tv/*</string>
+			<string>https://www.twitch.tv/*</string>
 		</array>
 	</dict>
 	<key>Description</key>

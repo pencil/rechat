@@ -9,7 +9,7 @@ var pageMod = require('sdk/page-mod'),
     };
 
 pageMod.PageMod({
-  include: ['http://www.twitch.tv/*'],
+  include: ['http://www.twitch.tv/*', 'https://www.twitch.tv/*'],
   contentScriptOptions: {
     paths: localFiles,
     version: version

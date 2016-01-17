@@ -14,6 +14,7 @@
   "permissions": {
     "cross-domain-content": [
       "http://www.twitch.tv/",
+      "https://www.twitch.tv/",
       "https://api.twitch.tv/kraken/",
       "http://search.rechat.org/"
     ]

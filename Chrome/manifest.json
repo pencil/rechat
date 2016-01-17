@@ -17,14 +17,16 @@
 
   "permissions": [
     "http://www.twitch.tv/",
+    "https://www.twitch.tv/",
     "https://api.twitch.tv/kraken/",
-    "http://*.rechat.org/"
+    "http://*.rechat.org/",
+    "https://*.rechat.org/"
   ],
   "content_security_policy": "script-src 'self' https://api.twitch.tv/; object-src 'self'",
 
   "content_scripts": [
     {
-      "matches": ["http://www.twitch.tv/*"],
+      "matches": ["https://www.twitch.tv/*", "https://www.twitch.tv/*"],
       "js": ["js/jquery.min.js", "js/please.js", "js/autolinker.js", "js/staydown.js", "js/rechat.chrome.js", "js/rechat.js"]
     }
   ],

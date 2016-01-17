@@ -26,6 +26,16 @@ this.ReChat = $.extend({
   }
 }, this.ReChat || {});
 
+ReChat.EmberSettings = function() {
+  try {
+    if ( localStorage.hasOwnProperty('chatSettings') ) {
+      return JSON.parse(localStorage.chatSettings);
+    }
+  } catch(err) { }
+
+  return {showTimestamps: false, darkMode: false};
+}
+
 ReChat.BTTVDetected = function() {
   return $('script[src*="betterttv"]').length != 0;
 }
@@ -63,6 +73,11 @@ ReChat.Playback.prototype._prepareInterface = function() {
 
   var containerTab = $('#right_col .rightcol-content .tab-container').not('.hidden').first();
   var containerChat = $('<div>').addClass('chat-container js-chat-container');
+
+  var settings = ReChat.EmberSettings();
+  if ( settings.darkMode ) {
+    containerChat.addClass('dark');
+  }
 
   var containerEmber = $('<div>').css({
     'z-index': 4,
